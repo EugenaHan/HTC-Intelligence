@@ -1,4 +1,11 @@
+const OpenAI = require('openai');
 const { getNews, saveNews, getUserFavorites, addFavorite, removeFavorite, validateUser, connectToDatabase } = require('./db');
+
+// DeepSeek / OpenAI 兼容：baseURL 未设置时默认 DeepSeek
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.API_BASE_URL || 'https://api.deepseek.com'
+});
 
 // 英文报告 System Prompt（与之前提供的 Prompt 一致）
 const REPORT_SYSTEM_PROMPT = `You are a Senior Market Intelligence Consultant for the Hawaii Tourism Board (HTB) China Office. Your goal is to transform raw news data into a professional, English-language executive report.
@@ -125,40 +132,30 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ success: false, message: 'Request must include non-empty "news" or "selectedNews" array.' });
       }
 
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) {
+      if (!process.env.OPENAI_API_KEY) {
         return res.status(503).json({ success: false, message: 'OPENAI_API_KEY not configured.' });
       }
 
       const userMessage = `Generate the executive report based on the following selected news articles. Output only the report in Markdown.\n\n${JSON.stringify(articles, null, 2)}`;
 
       try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: REPORT_SYSTEM_PROMPT },
-              { role: 'user', content: userMessage }
-            ],
-            temperature: 0.4,
-            max_tokens: 4096
-          })
+        const completion = await openai.chat.completions.create({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: REPORT_SYSTEM_PROMPT },
+            { role: 'user', content: userMessage }
+          ],
+          temperature: 0.4,
+          max_tokens: 4096
         });
-        const data = await response.json();
-        if (data.error) {
-          console.error('OpenAI API error:', data.error);
-          return res.status(502).json({ success: false, message: data.error.message || 'LLM request failed.' });
-        }
-        const reportContent = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content.trim() : '';
+        const reportContent = (completion.choices && completion.choices[0] && completion.choices[0].message && completion.choices[0].message.content)
+          ? completion.choices[0].message.content.trim()
+          : '';
         return res.status(200).json({ success: true, data: reportContent, reportContent });
       } catch (err) {
         console.error('generate-report error:', err);
-        return res.status(502).json({ success: false, message: err.message || 'Report generation failed.' });
+        const msg = err.message || (err.error && err.error.message) || 'Report generation failed.';
+        return res.status(502).json({ success: false, message: msg });
       }
     }
 

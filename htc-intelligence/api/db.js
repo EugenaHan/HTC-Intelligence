@@ -27,7 +27,9 @@ async function connectToDatabase() {
       await mongoClient.connect();
     }
 
-    const db = mongoClient.db('htc-intelligence');
+    // 数据库名：htc_intelligence（与 MONGODB_URI 中库名一致）
+    const dbName = process.env.MONGODB_DB_NAME || 'htc_intelligence';
+    const db = mongoClient.db(dbName);
     cachedDb = db;
     return db;
   } catch (error) {
@@ -302,13 +304,14 @@ async function removeFavorite(userId, newsId) {
   }
 }
 
-// 用户登录：MongoDB users 集合，字段 email + password（生产环境建议用 bcrypt 存密码）
+// 用户登录：htc_intelligence 库下的 users 集合，支持 email+password 或 username+password
 async function getUserByEmail(email) {
   const db = await connectToDatabase();
   if (!db) return null;
   try {
     const collection = db.collection('users');
-    return await collection.findOne({ email: (email || '').trim().toLowerCase() });
+    const e = (email || '').trim().toLowerCase();
+    return await collection.findOne({ $or: [{ email: e }, { username: e }] });
   } catch (error) {
     console.error('Error getUserByEmail:', error);
     return null;

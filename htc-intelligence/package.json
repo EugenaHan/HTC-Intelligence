@@ -9,6 +9,7 @@
     "crawler": "node crawler/news-crawler.js"
   },
   "dependencies": {
+    "openai": "^4.0.0",
     "mongodb": "^6.10.0",
     "@vercel/node": "^3.2.0",
     "firebase-admin": "^12.6.0",
