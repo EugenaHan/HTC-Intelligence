@@ -144,6 +144,17 @@ GitHub Actions 将每天自动运行爬虫，更新新闻数据。
 
 应该显示新闻卡片和报告面板。
 
+### 4. 登录功能（MongoDB 用户）
+登录使用 `/api/login`（POST，body: `{ email, password }`），在 MongoDB 同一数据库下需有 **users** 集合。
+
+在 MongoDB Atlas 中创建测试用户（示例）：
+- 进入 **Collections** → 选择数据库 `htc-intelligence` → 新建集合 `users`
+- 插入文档（示例，密码为明文；生产环境建议用 bcrypt 存密码）：
+```json
+{ "email": "your@email.com", "password": "yourpassword" }
+```
+前端点击「Sign In」会请求 `POST /api/login`，校验通过后返回 `{ success: true, user: { uid, email } }`。
+
 ---
 
 ## 故障排查

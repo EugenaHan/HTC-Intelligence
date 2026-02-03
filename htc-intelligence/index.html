@@ -528,7 +528,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
-        // API Configuration - Use relative path for same-domain API
+        // API：使用相对路径 /api，与 Vercel 部署同域（勿用 localhost）
         const API_URL = '/api';
 
         // State
@@ -607,18 +607,34 @@
         function openModal() { loginModal.classList.add('active'); }
         function closeModal() { loginModal.classList.remove('active'); }
 
-        // Sign in with email/password
-        function signIn() {
-            const email = document.getElementById('loginEmail').value;
+        // Sign in with email/password：请求 /api/login，与 api/index.js 中 POST path===login 对应
+        async function signIn() {
+            const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
-            
-            auth.signInWithEmailAndPassword(email, password)
-                .then(() => {
-                    closeModal();
-                })
-                .catch(error => {
-                    alert('Sign in failed: ' + error.message);
+            if (!email || !password) {
+                alert('Please enter email and password.');
+                return;
+            }
+            try {
+                // 登录：POST /api/login
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
                 });
+                const result = await response.json();
+                if (result.success && result.user) {
+                    currentUser = result.user;
+                    closeModal();
+                    updateUserSection();
+                    if (currentUser && currentUser.uid) loadFavorites();
+                    renderNews();
+                } else {
+                    alert(result.message || 'Sign in failed.');
+                }
+            } catch (error) {
+                alert('Sign in failed: ' + (error.message || 'Network error'));
+            }
         }
 
         // Sign in with Google
@@ -633,16 +649,19 @@
                 });
         }
 
-        // Sign out
+        // Sign out（兼容 API 登录与 Firebase）
         function signOut() {
-            auth.signOut();
+            if (typeof auth !== 'undefined' && auth.signOut) auth.signOut();
+            currentUser = null;
             favorites = [];
+            updateUserSection();
             renderNews();
         }
 
         // Load news from API
         async function loadNews() {
             try {
+                // 加载新闻：GET /api/news
                 console.log('Fetching news from:', `${API_URL}/news`);
                 const response = await fetch(`${API_URL}/news`);
                 console.log('Response status:', response.status);
@@ -893,6 +912,7 @@
             }));
 
             try {
+                // 生成报告：POST /api/generate-report
                 const response = await fetch(`${API_URL}/generate-report`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

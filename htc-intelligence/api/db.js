@@ -302,6 +302,31 @@ async function removeFavorite(userId, newsId) {
   }
 }
 
+// 用户登录：MongoDB users 集合，字段 email + password（生产环境建议用 bcrypt 存密码）
+async function getUserByEmail(email) {
+  const db = await connectToDatabase();
+  if (!db) return null;
+  try {
+    const collection = db.collection('users');
+    return await collection.findOne({ email: (email || '').trim().toLowerCase() });
+  } catch (error) {
+    console.error('Error getUserByEmail:', error);
+    return null;
+  }
+}
+
+async function validateUser(email, password) {
+  const user = await getUserByEmail(email);
+  if (!user || !user.password) return null;
+  // 简单明文比对；生产环境请用 bcrypt.compare(password, user.password)
+  if (String(password) !== String(user.password)) return null;
+  return {
+    id: user._id.toString(),
+    email: user.email,
+    uid: user._id.toString()
+  };
+}
+
 module.exports = {
   connectToDatabase,
   getNews,
@@ -309,5 +334,7 @@ module.exports = {
   deleteOldNews,
   getUserFavorites,
   addFavorite,
-  removeFavorite
+  removeFavorite,
+  getUserByEmail,
+  validateUser
 };
