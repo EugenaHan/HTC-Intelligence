@@ -518,7 +518,7 @@ async function crawlAllNews() {
         await axios.post(`${API_URL}/news`, news, {
           headers: { 'Content-Type': 'application/json' }
         });
-        console.log(`Saved: ${news.title.substring(0, 50)}...`);
+        console.log('Successfully pushed to MongoDB:', news.title);
       } catch (error) {
         console.error(`Error saving news:`, error.message);
       }

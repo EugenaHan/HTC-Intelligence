@@ -31,5 +31,6 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          # API_URL 请填 https://htc-intelligence-697f.vercel.app/api（不要带末尾斜杠）
           API_URL: ${{ secrets.API_URL }}
         run: node api/cron.js
