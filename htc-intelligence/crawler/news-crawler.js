@@ -5,9 +5,19 @@ const cheerio = require('cheerio');
 const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
 const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
 const INSIGHT_DELAY_MS = 500; // delay between AI insight calls to avoid rate limits
-const INSIGHT_PROMPT = `You are a Senior Strategic Consultant for the Hawaii Tourism Board (HTB). Analyze this news: Title: {title}, Summary: {summary}. Based on your expertise in cross-disciplinary market intelligence (History, Art, Tech), provide a professional insight (under 60 words in Chinese) specifically for the Hawaii market. Focus on competitive threats, opportunities for HTB, or strategic recommendations.`;
+// fullText 为主要输入，确保 DeepSeek 基于完整文章脉络生成夏威夷战略洞察
+const INSIGHT_PROMPT = `You are a Senior Strategic Consultant for the Hawaii Tourism Board (HTB). Analyze this news article. Full text (excerpt): {fullText}. Title: {title}. Summary: {summary}. Based on your expertise in cross-disciplinary market intelligence (History, Art, Tech), provide a professional insight (under 60 words in Chinese) specifically for the Hawaii market. Focus on competitive threats, opportunities for HTB, or strategic recommendations.`;
 
-// News sources configuration
+const FULL_TEXT_FETCH_MAX = 1500;   // 正文前 1500 字，用于关键词/分类及 AI 洞察
+const INSIGHT_FULL_TEXT_CHARS = 1500; // fullText 作为主要输入传给 DeepSeek（完整脉络）
+const DETAIL_DELAY_MIN_MS = 500;   // 详情页随机延时下限，防封禁
+const DETAIL_DELAY_MAX_MS = 1500;  // 详情页随机延时上限
+
+// Optional: decode non-UTF8 response (e.g. GBK for some Chinese sites)
+let iconvLite;
+try { iconvLite = require('iconv-lite'); } catch (_) { iconvLite = null; }
+
+// News sources configuration (articleBody: 正文选择器，配合二级爬取逻辑)
 const NEWS_SOURCES = [
   {
     name: 'Travel And Tour World',
@@ -18,7 +28,8 @@ const NEWS_SOURCES = [
       title: 'h2.entry-title a',
       link: 'h2.entry-title a',
       summary: '.entry-content p',
-      date: '.entry-date'
+      date: '.entry-date',
+      articleBody: '.entry-content' // 核心正文区域
     }
   },
   {
@@ -30,7 +41,8 @@ const NEWS_SOURCES = [
       title: 'h2 a',
       link: 'h2 a',
       summary: '.excerpt',
-      date: '.date'
+      date: '.date',
+      articleBody: '.post-content'
     }
   },
   {
@@ -42,7 +54,8 @@ const NEWS_SOURCES = [
       title: 'h4 a',
       link: 'h4 a',
       summary: 'p',
-      date: '.date'
+      date: '.date',
+      articleBody: '#Content' // China Daily 标准正文 ID
     }
   },
   {
@@ -54,7 +67,8 @@ const NEWS_SOURCES = [
       title: 'h3 a',
       link: 'h3 a',
       summary: '.desc',
-      date: '.time'
+      date: '.time',
+      articleBody: '.article-content'
     }
   },
   {
@@ -66,7 +80,8 @@ const NEWS_SOURCES = [
       title: '.article_title a',
       link: '.article_title a',
       summary: '.article_desc',
-      date: '.article_time'
+      date: '.article_time',
+      articleBody: '.article_content'
     }
   },
   {
@@ -78,27 +93,48 @@ const NEWS_SOURCES = [
       title: '.entry-title a',
       link: '.entry-title a',
       summary: '.entry-content',
-      date: 'time'
+      date: 'time',
+      articleBody: '.entry-content'
     }
   },
-  // 中文行业媒体占位（待配置实际 URL/选择器）
   {
-    name: '旅业传媒',
+    name: '旅业传媒 (Travel Daily CN)',
     baseUrl: 'https://www.traveldaily.cn',
     searchUrl: 'https://www.traveldaily.cn/article',
-    selectors: { articles: '.article-list .item', title: 'a', link: 'a', summary: '.desc', date: '.date' }
+    selectors: {
+      articles: '.article-item',
+      title: '.title a',
+      link: '.title a',
+      summary: '.desc',
+      date: '.date',
+      articleBody: '.article-content'
+    }
   },
   {
     name: '执惠',
     baseUrl: 'https://www.tripvivid.com',
     searchUrl: 'https://www.tripvivid.com/news',
-    selectors: { articles: '.news-item', title: 'h3 a', link: 'h3 a', summary: 'p', date: '.time' }
+    selectors: {
+      articles: '.news-item',
+      title: 'h3 a',
+      link: 'h3 a',
+      summary: 'p',
+      date: '.time',
+      articleBody: '.content-detail'
+    }
   },
   {
     name: '闻旅',
     baseUrl: 'https://www.wenlvnews.com',
     searchUrl: 'https://www.wenlvnews.com/list',
-    selectors: { articles: '.list-item', title: 'a', link: 'a', summary: '.summary', date: '.date' }
+    selectors: {
+      articles: '.list-item',
+      title: 'a',
+      link: 'a',
+      summary: '.summary',
+      date: '.date',
+      articleBody: '.article-body'
+    }
   }
 ];
 
@@ -271,12 +307,16 @@ function fallbackInsightFromCategories(categories, sentiment, title, summary) {
   return "持续监测市场动态，结合签证、航线、目的地与消费趋势，调整夏威夷产品与营销策略。";
 }
 
-// Async AI insight：调用 DeepSeek API；失败时回退为分类摘要。返回 { insight, viaDeepSeek }。
-async function generateInsightAsync(title, summary, categories, sentiment) {
+// Async AI insight：fullText（正文前 1500 字）为主要输入，供 DeepSeek 基于完整脉络生成夏威夷战略洞察。返回 { insight, viaDeepSeek }。
+async function generateInsightAsync(title, summary, categories, sentiment, fullTextExcerpt) {
   if (!DEEPSEEK_KEY) {
     return { insight: fallbackInsightFromCategories(categories, sentiment, title, summary), viaDeepSeek: false };
   }
-  const prompt = INSIGHT_PROMPT.replace('{title}', title).replace('{summary}', summary || '');
+  const fullText = (fullTextExcerpt && typeof fullTextExcerpt === 'string') ? fullTextExcerpt.trim().substring(0, INSIGHT_FULL_TEXT_CHARS) : '';
+  const prompt = INSIGHT_PROMPT
+    .replace('{fullText}', fullText || '(none)')
+    .replace('{title}', title)
+    .replace('{summary}', summary || '');
   try {
     const url = `${DEEPSEEK_BASE}/v1/chat/completions`;
     const res = await axios.post(
@@ -307,20 +347,48 @@ async function generateInsightAsync(title, summary, categories, sentiment) {
   return { insight: fallbackInsightFromCategories(categories, sentiment, title, summary), viaDeepSeek: false };
 }
 
-// Crawl news from a source
+// Fetch full article body from detail page; handle encoding for Chinese sources. Returns first FULL_TEXT_FETCH_MAX chars.
+async function fetchFullText(link, bodySelector, encoding) {
+  try {
+    const opts = {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 10000,
+      maxRedirects: 3
+    };
+    if (encoding && encoding.toLowerCase() !== 'utf-8' && iconvLite) {
+      opts.responseType = 'arraybuffer'; // raw bytes for iconv-lite decode
+    }
+    const res = await axios.get(link, opts);
+    let html = res.data;
+    if (encoding && encoding.toLowerCase() !== 'utf-8' && iconvLite) {
+      const buf = Buffer.isBuffer(res.data) ? res.data : Buffer.from(res.data);
+      html = iconvLite.decode(buf, encoding);
+    } else if (typeof html !== 'string') {
+      html = String(html);
+    }
+    const $ = cheerio.load(html);
+    const selectors = (bodySelector || '.content, .article-content, .entry-content').split(',').map(s => s.trim());
+    let text = '';
+    for (const sel of selectors) {
+      text = $(sel).text().trim();
+      if (text.length > 0) break;
+    }
+    return (text || '').replace(/\s+/g, ' ').substring(0, FULL_TEXT_FETCH_MAX);
+  } catch (e) {
+    return '';
+  }
+}
+
+// 二级深度抓取：列表候选 → 访问详情页取正文 1500 字 → 关键词通过后再参与洞察与存库
 async function crawlSource(source) {
   try {
     console.log(`Crawling ${source.name}...`);
-    
     const response = await axios.get(source.searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       timeout: 10000
     });
-    
     const $ = cheerio.load(response.data);
-    const candidates = [];
+    const listCandidates = [];
 
     $(source.selectors.articles).each((i, elem) => {
       const titleElem = $(elem).find(source.selectors.title);
@@ -328,37 +396,66 @@ async function crawlSource(source) {
       const link = titleElem.attr('href');
       const summary = $(elem).find(source.selectors.summary).text().trim();
       const dateText = $(elem).find(source.selectors.date).text().trim();
-
       if (title && link) {
-        const text = (title + ' ' + summary).toLowerCase();
-        const isRelevant = KEYWORDS.some(kw => text.includes(kw.toLowerCase()));
-        if (isRelevant) {
-          const categories = categorizeNews(title, summary);
-          const sentiment = analyzeSentiment(title, summary);
-          let date = new Date().toISOString().split('T')[0];
-          if (dateText) {
-            const parsedDate = new Date(dateText);
-            if (!isNaN(parsedDate)) date = parsedDate.toISOString().split('T')[0];
-          }
-          candidates.push({
-            title,
-            link: link.startsWith('http') ? link : source.baseUrl + link,
-            summary: summary.substring(0, 300) + (summary.length > 300 ? '...' : ''),
-            source: source.name,
-            date,
-            categories,
-            sentiment,
-            month: date.substring(0, 7).replace('-', '年') + '月'
-          });
-        }
+        const fullLink = link.startsWith('http') ? link : source.baseUrl + link;
+        listCandidates.push({
+          title,
+          link: fullLink,
+          summary: summary.substring(0, 300) + (summary.length > 300 ? '...' : ''),
+          dateText
+        });
       }
     });
+
+    const bodySelector = source.selectors.articleBody || '.content, .entry-content';
+    const encoding = source.encoding || null;
+    const candidates = [];
+
+    for (let i = 0; i < listCandidates.length; i++) {
+      // 详情页随机延时 500ms–1500ms，防止被目标站封禁
+      if (i > 0) {
+        const delay = DETAIL_DELAY_MIN_MS + Math.floor(Math.random() * (DETAIL_DELAY_MAX_MS - DETAIL_DELAY_MIN_MS + 1));
+        await new Promise(r => setTimeout(r, delay));
+      }
+      const item = listCandidates[i];
+      // 使用 axios 访问详情页，按 articleBody 抓取正文前 1500 字
+      const fullText = await fetchFullText(item.link, bodySelector, encoding);
+      const combinedText = (item.title + ' ' + item.summary + ' ' + fullText).toLowerCase();
+      const isRelevant = KEYWORDS.some(kw => combinedText.includes(kw.toLowerCase()));
+      if (!isRelevant) continue;
+
+      // 符合关键词后再参与分类与洞察，不直接存库
+      const categories = categorizeNews(item.title, item.summary + ' ' + fullText);
+      const sentiment = analyzeSentiment(item.title, item.summary + ' ' + fullText);
+      let date = new Date().toISOString().split('T')[0];
+      if (item.dateText) {
+        const parsedDate = new Date(item.dateText);
+        if (!isNaN(parsedDate)) date = parsedDate.toISOString().split('T')[0];
+      }
+      candidates.push({
+        title: item.title,
+        link: item.link,
+        summary: item.summary,
+        source: source.name,
+        date,
+        categories,
+        sentiment,
+        month: date.substring(0, 7).replace('-', '年') + '月',
+        fullTextForInsight: fullText.substring(0, INSIGHT_FULL_TEXT_CHARS) // fullText 作为主要输入传给 AI
+      });
+    }
 
     const articles = [];
     for (let i = 0; i < candidates.length; i++) {
       if (i > 0) await new Promise(r => setTimeout(r, INSIGHT_DELAY_MS));
       const c = candidates[i];
-      const { insight, viaDeepSeek } = await generateInsightAsync(c.title, c.summary, c.categories, c.sentiment);
+      const { insight, viaDeepSeek } = await generateInsightAsync(
+        c.title,
+        c.summary,
+        c.categories,
+        c.sentiment,
+        c.fullTextForInsight
+      );
       if (viaDeepSeek) {
         console.log(`Insight generated for [${c.title}] via DeepSeek`);
       }
