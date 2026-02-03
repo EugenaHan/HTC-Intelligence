@@ -1,0 +1,89 @@
+{
+  "source": "China Travel News",
+  "articles": [
+    {
+      "title": "China-U.S. air travel data show surging demand, with some routes hitting 100% load factor",
+      "date": "2025-11-22",
+      "url": "https://www.chinatravelnews.com/article/188694",
+      "summary": "According to U.S. Bureau of Transportation Statistics data for August, China-U.S. routes offered 253,400 seats, carried 224,100 passengers with an average load factor of 88.44%. There were 18 routes connecting 8 Chinese cities and 7 U.S. cities. Shanghai Pudong-Los Angeles route carried 37,538 passengers, making it the busiest route. Some routes reached 100% load factor including Air China's Shenzhen-Los Angeles and Sichuan Airlines' Chengdu Tianfu-Los Angeles routes."
+    },
+    {
+      "title": "China-US flights remain scarce",
+      "date": "2025-11-06",
+      "url": "https://www.chinatravelnews.com/article/188547",
+      "summary": "In the new flight season (October 26, 2025 - March 28, 2026), there are only 27 scheduled flights per week between Chinese mainland and the United States, with recovery rate below 30%. At its peak in 2019, China operated 1,621 flights per month to the U.S., but currently only around 430 flights per month, representing less than 30% recovery."
+    },
+    {
+      "title": "Hong Kong startup airline eyes first U.S. route",
+      "date": "2025-06-26",
+      "url": "https://www.chinatravelnews.com/article/187479",
+      "summary": "Greater Bay Airlines has applied to the U.S. DOT to launch Hong Kong to Saipan route twice weekly for the 2025-2026 winter season. This would be the airline's first U.S. route. Saipan previously allowed visa-free access for Chinese nationals but since December 2024, Chinese travelers must apply for G-CNMI ETA unless they hold a valid U.S. visa."
+    },
+    {
+      "title": "Argentina grants visa-free entry to Chinese tourists with U.S. visas",
+      "date": "2025-07-22",
+      "url": "https://www.chinatravelnews.com/article/187711",
+      "summary": "Starting from July 22, 2025, Chinese citizens holding a regular passport and valid U.S. visa may enter Argentina without a visa for tourism or business purposes, with stays up to 30 days extendable once. Previously, Argentine visa fees had soared from USD 50 to as high as USD 400."
+    },
+    {
+      "title": "Hawaii attack could chill Chinese tourism",
+      "date": "2024-01-31",
+      "url": "https://www.chinatravelnews.com/article/179764",
+      "summary": "An acid attack against a Chinese visitor in Hawaii generated negative publicity in China. Before COVID, Chinese tourists were substantial to Hawaii's economy, peaking in 2015 with over 165,000 arrivals. While spending levels are back to pre-pandemic levels, Chinese visitor arrivals have not recovered."
+    },
+    {
+      "title": "Can American influencers spark a boom in China's inbound tourism?",
+      "date": "2025-04-09",
+      "url": "https://www.chinatravelnews.com/article/186581",
+      "summary": "American internet celebrity IShowSpeed's China tour went viral on social media, showcasing cities like Shanghai, Beijing, Chengdu, and Chongqing. According to China's Statistical Communiqué, inbound tourism surged in 2024 to 131.9 million visits, up 61% year-on-year, recovering to over 90% of 2019 levels. Foreign influencers are becoming a powerful force in reshaping how the world sees China."
+    },
+    {
+      "title": "China's special port fee on U.S.-linked ships puts Royal Caribbean at risk",
+      "date": "2025-10-15",
+      "url": "https://www.chinatravelnews.com/article/188369",
+      "summary": "China's special port fee on U.S.-linked ships is putting Royal Caribbean at risk, with the cruise giant facing a double squeeze from global regulations."
+    },
+    {
+      "title": "Finnair and British Airways: Beijing routes unlikely to return",
+      "date": "2026-01-27",
+      "url": "https://www.chinatravelnews.com/article/189199",
+      "summary": "Finnair and British Airways indicate there is no clear basis for resumption of their Beijing routes, reflecting the challenges in international aviation recovery."
+    },
+    {
+      "title": "China grants 30-day visa-free entry for UK citizens",
+      "date": "2026-02-02",
+      "url": "https://www.chinatravelnews.com/article/189245",
+      "summary": "China has granted 30-day visa-free entry for UK citizens. Passenger traffic between China and the UK increased by 4.0% year on year in the first three quarters of 2025."
+    },
+    {
+      "title": "Brazil goes visa-free for Chinese tourists",
+      "date": "2026-01-26",
+      "url": "https://www.chinatravelnews.com/article/189194",
+      "summary": "Brazil has implemented visa-free policy for Chinese tourists. In the first half of 2025, Brazil received 58,000 Chinese visitors, up 40% year on year."
+    },
+    {
+      "title": "Canada's visa-free travel to China: who gains most?",
+      "date": "2026-01-19",
+      "url": "https://www.chinatravelnews.com/article/189138",
+      "summary": "Canada's visa-free travel policy to China benefits Chinese Canadians who account for 4.7% of Canada's population, strengthening people-to-people exchanges."
+    },
+    {
+      "title": "Is a stronger RMB the biggest black swan for China's tourism in 2026?",
+      "date": "2026-01-19",
+      "url": "https://www.chinatravelnews.com/article/189135",
+      "summary": "A stronger RMB has hit the gas for outbound travel that was suppressed in previous years, potentially boosting Chinese overseas tourism spending."
+    },
+    {
+      "title": "China travel slowdown weighs on Japan as Chinese spending and arrivals slide",
+      "date": "2026-01-28",
+      "url": "https://www.chinatravelnews.com/article/189210",
+      "summary": "Chinese tourists to Japan fell 45% in December 2025, marking the first decline in nearly four years and weighing on Japan's tourism-dependent economy."
+    },
+    {
+      "title": "Turkey launches visa-free entry for Chinese travelers",
+      "date": "2026-01-03",
+      "url": "https://www.chinatravelnews.com/article/189029",
+      "summary": "Turkey has launched visa-free entry for Chinese travelers. China has become Turkey's fastest-growing tourism source market."
+    }
+  ]
+}

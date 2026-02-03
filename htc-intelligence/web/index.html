@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTC Market Intelligence - China Outbound Tourism</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <style>
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #004d99;
+            --secondary: #00a8e8;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --shadow-lg: 0 4px 20px rgba(0,0,0,0.15);
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans SC', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+
+        /* Header */
+        header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo-section { display: flex; align-items: center; gap: 15px; }
+
+        .logo {
+            width: 50px; height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 24px;
+        }
+
+        .title-section h1 { font-size: 22px; font-weight: 700; color: var(--dark); margin-bottom: 3px; }
+        .title-section p { color: var(--gray); font-size: 12px; }
+
+        /* User Section */
+        .user-section { display: flex; align-items: center; gap: 15px; }
+
+        .user-info {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--light); padding: 8px 15px;
+            border-radius: 20px;
+        }
+
+        .user-avatar {
+            width: 32px; height: 32px;
+            background: var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 14px;
+        }
+
+        .user-name { font-size: 14px; font-weight: 500; }
+
+        .btn {
+            padding: 8px 16px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: all 0.3s ease; display: inline-flex;
+            align-items: center; gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+        .btn-outline {
+            background: white; border: 2px solid var(--border);
+            color: var(--dark);
+        }
+
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* Login Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            z-index: 1000; align-items: center; justify-content: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: white; border-radius: var(--radius);
+            padding: 30px; width: 90%; max-width: 400px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 20px;
+        }
+
+        .modal-header h2 { font-size: 20px; }
+
+        .close-btn {
+            background: none; border: none; font-size: 24px;
+            cursor: pointer; color: var(--gray);
+        }
+
+        .form-group { margin-bottom: 15px; }
+
+        .form-group label {
+            display: block; font-size: 13px;
+            font-weight: 500; margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%; padding: 10px 12px;
+            border: 2px solid var(--border); border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none; border-color: var(--primary);
+        }
+
+        /* Stats */
+        .stats-section { display: flex; gap: 20px; }
+
+        .stat-item { text-align: center; }
+
+        .stat-value {
+            font-size: 28px; font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label { font-size: 10px; color: var(--gray); text-transform: uppercase; }
+
+        /* Filters */
+        .filters-section {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .filters-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+
+        .filter-label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; }
+
+        .filter-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .filter-btn {
+            padding: 6px 14px; border: 2px solid var(--border);
+            background: white; border-radius: 20px;
+            cursor: pointer; font-size: 13px; font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+        .filter-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+        /* Main Layout */
+        .main-layout { display: grid; grid-template-columns: 1fr 420px; gap: 20px; }
+
+        /* News Grid */
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
+
+        /* News Card */
+        .news-card {
+            background: white; border-radius: var(--radius);
+            box-shadow: var(--shadow); overflow: hidden;
+            transition: all 0.3s ease; display: flex;
+            flex-direction: column; position: relative;
+        }
+
+        .news-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+
+        .card-header {
+            padding: 15px 15px 10px;
+            display: flex; justify-content: space-between;
+            align-items: flex-start; gap: 10px;
+        }
+
+        .card-categories { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+
+        .category-tag {
+            padding: 3px 8px; border-radius: 10px;
+            font-size: 10px; font-weight: 600; text-transform: uppercase;
+        }
+
+        .tag-outbound { background: #f3e5f5; color: #7b1fa2; }
+        .tag-consumption { background: #fff8e1; color: #f57c00; }
+        .tag-economy { background: #e8f5e9; color: #2e7d32; }
+        .tag-short { background: #ffebee; color: #c62828; }
+        .tag-long { background: #e3f2fd; color: #1565c0; }
+        .tag-visa { background: #fff3e0; color: #e65100; }
+        .tag-flight { background: #e0f7fa; color: #00838f; }
+        .tag-market { background: #e8eaf6; color: #3f51b5; }
+
+        .sentiment-badge {
+            padding: 4px 8px; border-radius: 12px;
+            font-size: 10px; font-weight: 600;
+            display: flex; align-items: center; gap: 3px;
+        }
+
+        .sentiment-positive { background: #d4edda; color: #155724; }
+        .sentiment-negative { background: #f8d7da; color: #721c24; }
+        .sentiment-neutral { background: #e2e3e5; color: #383d41; }
+
+        .card-body { padding: 0 15px 10px; flex: 1; }
+
+        .news-title {
+            font-size: 14px; font-weight: 600;
+            color: var(--dark); margin-bottom: 6px;
+            line-height: 1.4; cursor: pointer;
+        }
+
+        .news-title:hover { color: var(--primary); }
+
+        .news-summary { font-size: 12px; color: var(--gray); line-height: 1.5; margin-bottom: 10px; }
+
+        .news-meta { display: flex; gap: 10px; font-size: 11px; color: var(--gray); }
+
+        .meta-item { display: flex; align-items: center; gap: 4px; }
+
+        .card-actions {
+            padding: 10px 15px; background: #f8f9fa;
+            border-top: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .favorite-btn {
+            background: none; border: none; cursor: pointer;
+            font-size: 18px; color: var(--gray);
+            transition: all 0.3s ease;
+        }
+
+        .favorite-btn:hover { color: var(--danger); }
+
+        .favorite-btn.active { color: var(--danger); }
+
+        .read-more {
+            font-size: 12px; color: var(--primary);
+            text-decoration: none; display: flex;
+            align-items: center; gap: 4px;
+        }
+
+        .read-more:hover { text-decoration: underline; }
+
+        /* Report Panel */
+        .report-panel {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            padding: 20px; box-shadow: var(--shadow-lg);
+            height: fit-content; position: sticky; top: 20px;
+        }
+
+        .report-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 15px; padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .report-header i { font-size: 20px; color: var(--primary); }
+
+        .report-header h2 { font-size: 16px; font-weight: 700; }
+
+        .report-content {
+            font-family: 'Inter', monospace; font-size: 11px;
+            line-height: 1.6; color: var(--dark);
+            background: #f8f9fa; padding: 15px;
+            border-radius: 8px; border-left: 3px solid var(--primary);
+            max-height: 500px; overflow-y: auto; white-space: pre-wrap;
+            margin-bottom: 15px;
+        }
+
+        .copy-btn {
+            width: 100%; padding: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+
+        .copy-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+        /* Loading */
+        .loading {
+            text-align: center; padding: 40px; color: white;
+        }
+
+        .loading i { font-size: 40px; animation: spin 1s linear infinite; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Empty State */
+        .empty-state { text-align: center; padding: 40px 20px; color: white; }
+
+        .empty-state i { font-size: 48px; margin-bottom: 15px; opacity: 0.8; }
+
+        /* Footer */
+        footer { text-align: center; padding: 20px; color: rgba(255,255,255,0.7); font-size: 11px; }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .report-panel { position: static; }
+        }
+
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; text-align: center; }
+            .stats-section { justify-content: center; }
+            .news-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">
+                        <i class="fas fa-globe-asia"></i>
+                    </div>
+                    <div class="title-section">
+                        <h1>HTC Market Intelligence</h1>
+                        <p>China Outbound Tourism Competitive Analysis | Automated & Real-time</p>
+                    </div>
+                </div>
+                <div class="user-section" id="userSection">
+                    <!-- User info will be inserted here -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Filters -->
+        <div class="filters-section">
+            <div class="filters-row">
+                <div class="filter-group">
+                    <span class="filter-label">Market Segment</span>
+                    <div class="filter-buttons" id="segmentFilters">
+                        <button class="filter-btn active" data-segment="all">All</button>
+                        <button class="filter-btn" data-segment="中国出境游趋势">出境游趋势</button>
+                        <button class="filter-btn" data-segment="中国消费趋势">消费趋势</button>
+                        <button class="filter-btn" data-segment="中国经济趋势">经济趋势</button>
+                        <button class="filter-btn" data-segment="Short Haul">Short Haul</button>
+                        <button class="filter-btn" data-segment="Long Haul">Long Haul</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">View</span>
+                    <div class="filter-buttons">
+                        <button class="filter-btn" id="showFavoritesBtn">
+                            <i class="fas fa-heart"></i> My Favorites
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- News Grid -->
+            <div class="news-grid" id="newsGrid">
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading news...</p>
+                </div>
+            </div>
+
+            <!-- Report Panel -->
+            <div class="report-panel">
+                <div class="report-header">
+                    <i class="fas fa-file-alt"></i>
+                    <h2>Monthly Report</h2>
+                </div>
+                <div class="report-content" id="reportContent">Generating report...</div>
+                <button class="copy-btn" onclick="copyReport()">
+                    <i class="fas fa-copy"></i> Copy Report
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <i class="fas fa-inbox"></i>
+            <h3>No News Found</h3>
+            <p>Try adjusting your filters</p>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>HTC Market Intelligence System | Automated Daily Updates | 24/7 Online</p>
+        </footer>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sign In</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password">
+                </div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="signIn()">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid var(--border);">
+                <button class="btn btn-outline" style="width: 100%;" onclick="signInWithGoogle()">
+                    <i class="fab fa-google"></i> Sign in with Google
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+            projectId: "YOUR_FIREBASE_PROJECT_ID",
+            storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
+            appId: "YOUR_FIREBASE_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // API Configuration - Use relative path for same-domain API
+        const API_URL = '/api';
+
+        // State
+        let currentUser = null;
+        let currentSegment = 'all';
+        let newsData = [];
+        let favorites = [];
+        let showFavoritesOnly = false;
+
+        // DOM Elements
+        const newsGrid = document.getElementById('newsGrid');
+        const emptyState = document.getElementById('emptyState');
+        const reportContent = document.getElementById('reportContent');
+        const userSection = document.getElementById('userSection');
+        const loginModal = document.getElementById('loginModal');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthState();
+            checkAPIHealth();
+            loadNews();
+        });
+
+        // Check API health
+        async function checkAPIHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const result = await response.json();
+                console.log('API Health:', result);
+            } catch (error) {
+                console.error('API Health Check Failed:', error);
+            }
+        }
+
+        // Check authentication state
+        function checkAuthState() {
+            auth.onAuthStateChanged(user => {
+                currentUser = user;
+                updateUserSection();
+                if (user) {
+                    loadFavorites();
+                }
+            });
+        }
+
+        // Update user section UI
+        function updateUserSection() {
+            if (currentUser) {
+                userSection.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span class="user-name">${currentUser.email.split('@')[0]}</span>
+                    </div>
+                    <button class="btn btn-outline" onclick="signOut()">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
+                `;
+            } else {
+                userSection.innerHTML = `
+                    <button class="btn btn-primary" onclick="openModal()">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                `;
+            }
+        }
+
+        // Modal functions
+        function openModal() { loginModal.classList.add('active'); }
+        function closeModal() { loginModal.classList.remove('active'); }
+
+        // Sign in with email/password
+        function signIn() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    closeModal();
+                })
+                .catch(error => {
+                    alert('Sign in failed: ' + error.message);
+                });
+        }
+
+        // Sign in with Google
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then(() => {
+                    closeModal();
+                })
+                .catch(error => {
+                    alert('Sign in failed: ' + error.message);
+                });
+        }
+
+        // Sign out
+        function signOut() {
+            auth.signOut();
+            favorites = [];
+            renderNews();
+        }
+
+        // Load news from API
+        async function loadNews() {
+            try {
+                console.log('Fetching news from:', `${API_URL}/news`);
+                const response = await fetch(`${API_URL}/news`);
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Response data:', result);
+                
+                if (result.success) {
+                    newsData = result.data;
+                    renderNews();
+                } else {
+                    throw new Error(result.message || 'Failed to load news');
+                }
+            } catch (error) {
+                console.error('Error loading news:', error);
+                newsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3>Failed to load news</h3>
+                        <p>${error.message}</p>
+                        <button class="btn btn-primary" onclick="loadNews()" style="margin-top: 15px;">
+                            <i class="fas fa-sync"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Load user favorites
+        async function loadFavorites() {
+            if (!currentUser) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/favorites?userId=${currentUser.uid}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    favorites = result.data;
+                    renderNews();
+                }
+            } catch (error) {
+                console.error('Error loading favorites:', error);
+            }
+        }
+
+        // Toggle favorite
+        async function toggleFavorite(newsId) {
+            if (!currentUser) {
+                alert('Please sign in to save favorites');
+                openModal();
+                return;
+            }
+            
+            const isFav = favorites.includes(newsId);
+            
+            try {
+                if (isFav) {
+                    await fetch(`${API_URL}/favorites`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: currentUser.uid, newsId })
+                    });
+                    favorites = favorites.filter(id => id !== newsId);
+                } else {
+                    await fetch(`${API_URL}/favorites`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: currentUser.uid, newsId })
+                    });
+                    favorites.push(newsId);
+                }
+                
+                renderNews();
+            } catch (error) {
+                console.error('Error toggling favorite:', error);
+            }
+        }
+
+        // Generate report
+        function generateReport() {
+            let filtered = newsData;
+            
+            if (currentSegment !== 'all') {
+                filtered = filtered.filter(n => n.categories.includes(currentSegment));
+            }
+            
+            const shortHaul = filtered.filter(n => n.categories.includes('Short Haul'));
+            const longHaul = filtered.filter(n => n.categories.includes('Long Haul'));
+            const outboundTrend = filtered.filter(n => n.categories.includes('中国出境游趋势'));
+            const consumptionTrend = filtered.filter(n => n.categories.includes('中国消费趋势'));
+            
+            let report = `Competitive Environment\n\nSHORT HAUL\n\n`;
+            
+            if (shortHaul.length > 0) {
+                shortHaul.forEach(news => {
+                    report += `•\t${news.summary}\n`;
+                    report += `\tSource: ${news.source}, ${news.date}\n\n`;
+                });
+            } else {
+                report += `•\tNo significant Short Haul updates this period.\n\n`;
+            }
+            
+            report += `LONG HAUL\n\n`;
+            
+            if (longHaul.length > 0) {
+                longHaul.forEach(news => {
+                    report += `•\t${news.summary}\n`;
+                    report += `\tSource: ${news.source}, ${news.date}\n\n`;
+                });
+            } else {
+                report += `•\tNo significant Long Haul updates this period.\n\n`;
+            }
+            
+            report += `Consumer and Travel Trends\n\n`;
+            
+            [...outboundTrend, ...consumptionTrend].forEach(news => {
+                report += `•\t${news.summary}\n`;
+                report += `\tSource: ${news.source}, ${news.date}\n\n`;
+            });
+            
+            report += `Strategic Implications for Hawaii:\n`;
+            report += `•\tSoutheast Asia's visa-free policies pose strong competition\n`;
+            report += `•\tJapan's decline creates opportunity via Korea transit routes\n`;
+            report += `•\tAustralia/NZ expanding direct flights - differentiate through culture\n`;
+            report += `•\tMiddle East gaining popularity with visa-free access\n`;
+            report += `•\tHTA must intensify advocacy for streamlined US visa processing\n`;
+            
+            return report;
+        }
+
+        // Render news
+        function renderNews() {
+            let filtered = newsData;
+            
+            if (currentSegment !== 'all') {
+                filtered = filtered.filter(n => n.categories.includes(currentSegment));
+            }
+            
+            if (showFavoritesOnly) {
+                filtered = filtered.filter(n => favorites.includes(n._id));
+            }
+            
+            // Update report
+            reportContent.textContent = generateReport();
+            
+            if (filtered.length === 0) {
+                newsGrid.innerHTML = '';
+                newsGrid.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            newsGrid.style.display = 'grid';
+            emptyState.style.display = 'none';
+            
+            newsGrid.innerHTML = filtered.map(news => `
+                <div class="news-card">
+                    <div class="card-header">
+                        <div class="card-categories">
+                            ${news.categories.map(cat => `
+                                <span class="category-tag ${getCategoryClass(cat)}">${cat}</span>
+                            `).join('')}
+                        </div>
+                        <div class="sentiment-badge ${getSentimentClass(news.sentiment)}">
+                            <i class="fas ${getSentimentIcon(news.sentiment)}"></i>
+                            ${news.sentiment}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="news-title" onclick="window.open('${news.url}', '_blank')">${news.title}</h3>
+                        <p class="news-summary">${news.summary}</p>
+                        <div class="news-meta">
+                            <span class="meta-item"><i class="far fa-calendar"></i> ${news.date}</span>
+                            <span class="meta-item"><i class="far fa-newspaper"></i> ${news.source}</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="favorite-btn ${favorites.includes(news._id) ? 'active' : ''}" 
+                                onclick="toggleFavorite('${news._id}')">
+                            <i class="${favorites.includes(news._id) ? 'fas' : 'far'} fa-heart"></i>
+                        </button>
+                        <a href="${news.url}" target="_blank" class="read-more">
+                            Read More <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Helper functions
+        function getCategoryClass(category) {
+            const map = {
+                '中国出境游趋势': 'tag-outbound',
+                '中国消费趋势': 'tag-consumption',
+                '中国经济趋势': 'tag-economy',
+                'Short Haul': 'tag-short',
+                'Long Haul': 'tag-long',
+                'Visa Policy': 'tag-visa',
+                'Flight Routes': 'tag-flight',
+                'Market Data': 'tag-market',
+                'Market Trend': 'tag-market'
+            };
+            return map[category] || 'tag-market';
+        }
+
+        function getSentimentClass(sentiment) {
+            const map = { '利好': 'sentiment-positive', '威胁': 'sentiment-negative', '中立': 'sentiment-neutral' };
+            return map[sentiment] || 'sentiment-neutral';
+        }
+
+        function getSentimentIcon(sentiment) {
+            const map = { '利好': 'fa-arrow-trend-up', '威胁': 'fa-arrow-trend-down', '中立': 'fa-minus' };
+            return map[sentiment] || 'fa-minus';
+        }
+
+        // Copy report
+        function copyReport() {
+            const text = reportContent.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Report copied to clipboard!');
+            });
+        }
+
+        // Filter event listeners
+        document.getElementById('segmentFilters').addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-btn')) {
+                document.querySelectorAll('#segmentFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                currentSegment = e.target.dataset.segment;
+                renderNews();
+            }
+        });
+
+        document.getElementById('showFavoritesBtn').addEventListener('click', (e) => {
+            showFavoritesOnly = !showFavoritesOnly;
+            e.target.classList.toggle('active');
+            renderNews();
+        });
+    </script>
+</body>
+</html>

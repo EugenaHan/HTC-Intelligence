@@ -1,0 +1,77 @@
+[
+  {
+    "title": "US to suspend immigrant visa processing for 75 nations; politicization of immigration 'unprecedented'",
+    "date": "2026-01-15",
+    "source": "Global Times",
+    "url": "https://www.globaltimes.cn/page/202601/1353263.shtml",
+    "summary": "The US is indefinitely suspending immigrant visa processing from 75 countries starting January 21, 2026. China is not on the list. The suspension applies to immigrant visas for employment or family reunification but does not apply to non-immigrant visas like student and tourist visas. The affected countries include Brazil, Colombia, Egypt, Haiti, Somalia and Russia.",
+    "categories": [
+      "签证信息"
+    ],
+    "sentiment": "威胁",
+    "insight": "签证政策收紧将直接影响中国游客赴美意愿，需加强与旅行社合作提供签证支持服务。"
+  },
+  {
+    "title": "Thailand expresses concern to US over inclusion in visa suspension list: FM",
+    "date": "2026-01-15",
+    "source": "Global Times",
+    "url": "https://www.globaltimes.cn/page/202601/1353316.shtml",
+    "summary": "Thailand has expressed concern to the US over its inclusion in a list of 75 countries facing a suspension of immigrant visa processing. The Thai Foreign Minister stated that the government is seeking clarification from US authorities regarding the decision.",
+    "categories": [
+      "签证信息",
+      "竞品-短途市场"
+    ],
+    "sentiment": "中立",
+    "insight": "密切关注美国签证政策变化，为潜在游客提供最新签证信息。 短途目的地对中国游客吸引力增强，夏威夷需强调\"远途独特体验\"的价值主张。"
+  },
+  {
+    "title": "Spring Festival travel rush expected to see record highs in cross-regional, rail, and air passengers",
+    "date": "2026-01-21",
+    "source": "Global Times",
+    "url": "https://www.globaltimes.cn/page/202601/1353836.shtml",
+    "summary": "China's Spring Festival travel rush is expected to see record highs in cross-regional, rail, and air passengers. Inbound and outbound tourism are also booming during the winter vacation period, with strong demand for international travel.",
+    "categories": [
+      "中国出境游"
+    ],
+    "sentiment": "利好",
+    "insight": "中国出境游市场复苏强劲，夏威夷应加大在华营销投入，抢占市场份额。"
+  },
+  {
+    "title": "Philippines announces 14-day visa-free for Chinese; Manila's contradictory approach to China sparks online doubts over policy sincerity",
+    "date": "2026-01-15",
+    "source": "Global Times",
+    "url": "https://www.globaltimes.cn/page/202601/1353354.shtml",
+    "summary": "The Philippines will grant visa-free entry to Chinese nationals for up to 14 days starting January 16, 2026, in a bid to increase Chinese trade, investments and tourists. The policy applies only to tourists entering through Manila and Cebu airports and will be in effect for one year. The move comes as the Philippines seeks to tap China's lucrative outbound tourism market.",
+    "categories": [
+      "签证信息",
+      "竞品-短途市场",
+      "中国出境游"
+    ],
+    "sentiment": "利好",
+    "insight": "签证便利化有利于提升中国游客赴美意愿，夏威夷可加大签证辅助服务宣传。 短途目的地对中国游客吸引力增强，夏威夷需强调\"远途独特体验\"的价值主张。"
+  },
+  {
+    "title": "增长、风险与中国出境游复苏：2025年亚太地区旅游业展望",
+    "date": "2026-01-28",
+    "source": "Oxford Economics",
+    "url": "https://www.oxfordeconomics.com/zh-hans/resource/the-2025-travel-outlook-for-apac/",
+    "summary": "中国出境游客量有望在2026年恢复至疫情前水平。2025年中国出境游市场约1.3亿人次、2.5万亿元规模，较2024年增长18%。短途目的地恢复更快，长途目的地复苏相对缓慢。",
+    "categories": [
+      "中国出境游"
+    ],
+    "sentiment": "利好",
+    "insight": "中国出境游市场复苏强劲，夏威夷应加大在华营销投入，抢占市场份额。"
+  },
+  {
+    "title": "日本2025年12月中国内地访日游客数量同比大降45.3%",
+    "date": "2026-01-22",
+    "source": "新华社",
+    "url": "http://www.ce.cn/xwzx/gnsz/gdxw/202601/t20260122_2718541.shtml",
+    "summary": "2025年12月中国内地访日游客数量为33.04万人次，同比大幅下降45.3%。受日本首相涉台错误言论影响，中国游客明显减少。",
+    "categories": [
+      "中国出境游"
+    ],
+    "sentiment": "威胁",
+    "insight": "出境游市场存在不确定性，需多元化市场策略降低风险。"
+  }
+]

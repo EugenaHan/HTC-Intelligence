@@ -1,0 +1,22 @@
+{
+  "name": "htc-intelligence",
+  "version": "1.0.0",
+  "description": "HTC Market Intelligence - China Outbound Tourism Competitive Analysis",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel deploy --prod",
+    "crawler": "node crawler/news-crawler.js"
+  },
+  "dependencies": {
+    "mongodb": "^6.3.0",
+    "@vercel/node": "^3.0.0",
+    "firebase-admin": "^12.0.0",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  }
+}
