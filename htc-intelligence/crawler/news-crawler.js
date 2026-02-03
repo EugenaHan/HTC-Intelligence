@@ -1,6 +1,11 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
+// 解决部分环境证书校验报错（生产环境建议用 CA 或代理）
+if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '1') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 // DeepSeek API（与 api/index.js 一致：OPENAI_API_KEY + API_BASE_URL）
 const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
 const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
@@ -17,8 +22,23 @@ const DETAIL_DELAY_MAX_MS = 1500;  // 详情页随机延时上限
 let iconvLite;
 try { iconvLite = require('iconv-lite'); } catch (_) { iconvLite = null; }
 
-// News sources configuration (articleBody: 正文选择器，配合二级爬取逻辑)
+// News sources configuration (articleBody: 正文选择器；skipDetail: true 则不抓详情页)
 const NEWS_SOURCES = [
+  {
+    name: 'Google News RSS',
+    baseUrl: 'https://news.google.com',
+    searchUrl: 'https://news.google.com/rss/search?q=China+outbound+travel+Hawaii',
+    skipDetail: true,
+    xmlMode: true,
+    selectors: {
+      articles: 'item',
+      title: 'title',
+      link: 'link',
+      summary: 'description',
+      date: 'pubDate',
+      articleBody: ''
+    }
+  },
   {
     name: 'Travel And Tour World',
     baseUrl: 'https://www.travelandtourworld.com',
@@ -379,21 +399,34 @@ async function fetchFullText(link, bodySelector, encoding) {
   }
 }
 
-// 二级深度抓取：列表候选 → 访问详情页取正文 1500 字 → 关键词通过后再参与洞察与存库
+// 平衡版：一级页面优先（标题命中即入待处理）→ 异步正文（详情失败用摘要），不抛弃新闻
 async function crawlSource(source) {
   try {
     console.log(`Crawling ${source.name}...`);
-    const response = await axios.get(source.searchUrl, {
+    const opts = {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       timeout: 10000
-    });
-    const $ = cheerio.load(response.data);
+    };
+    let response;
+    try {
+      response = await axios.get(source.searchUrl, opts);
+    } catch (e) {
+      if (e.response && e.response.status === 404) {
+        console.warn(`${source.name} searchUrl 404, trying baseUrl...`);
+        response = await axios.get(source.baseUrl, opts);
+      } else {
+        throw e;
+      }
+    }
+
+    const $ = cheerio.load(response.data, source.xmlMode ? { xmlMode: true } : {});
     const listCandidates = [];
 
     $(source.selectors.articles).each((i, elem) => {
       const titleElem = $(elem).find(source.selectors.title);
-      const title = titleElem.text().trim();
-      const link = titleElem.attr('href');
+      let title = titleElem.text().trim();
+      let link = $(elem).find(source.selectors.link).attr('href');
+      if (!link) link = $(elem).find(source.selectors.link).text().trim();
       const summary = $(elem).find(source.selectors.summary).text().trim();
       const dateText = $(elem).find(source.selectors.date).text().trim();
       if (title && link) {
@@ -407,31 +440,36 @@ async function crawlSource(source) {
       }
     });
 
+    // 放宽关键词：只要标题命中即判定为有效新闻，加入待处理列表
+    const toProcess = listCandidates.filter(item =>
+      KEYWORDS.some(kw => item.title.toLowerCase().includes(kw.toLowerCase()))
+    );
+
     const bodySelector = source.selectors.articleBody || '.content, .entry-content';
     const encoding = source.encoding || null;
+    const skipDetail = source.skipDetail === true;
     const candidates = [];
 
-    for (let i = 0; i < listCandidates.length; i++) {
-      // 详情页随机延时 500ms–1500ms，防止被目标站封禁
+    for (let i = 0; i < toProcess.length; i++) {
       if (i > 0) {
         const delay = DETAIL_DELAY_MIN_MS + Math.floor(Math.random() * (DETAIL_DELAY_MAX_MS - DETAIL_DELAY_MIN_MS + 1));
         await new Promise(r => setTimeout(r, delay));
       }
-      const item = listCandidates[i];
-      // 使用 axios 访问详情页，按 articleBody 抓取正文前 1500 字
-      const fullText = await fetchFullText(item.link, bodySelector, encoding);
-      const combinedText = (item.title + ' ' + item.summary + ' ' + fullText).toLowerCase();
-      const isRelevant = KEYWORDS.some(kw => combinedText.includes(kw.toLowerCase()));
-      if (!isRelevant) continue;
-
-      // 符合关键词后再参与分类与洞察，不直接存库
-      const categories = categorizeNews(item.title, item.summary + ' ' + fullText);
-      const sentiment = analyzeSentiment(item.title, item.summary + ' ' + fullText);
+      const item = toProcess[i];
+      let fullText = '';
+      if (!skipDetail) {
+        fullText = await fetchFullText(item.link, bodySelector, encoding);
+      }
+      // 详情页失败（404/超时）时用列表摘要发给 DeepSeek，不抛弃
+      const textForCategorize = item.summary + ' ' + fullText;
+      const categories = categorizeNews(item.title, textForCategorize);
+      const sentiment = analyzeSentiment(item.title, textForCategorize);
       let date = new Date().toISOString().split('T')[0];
       if (item.dateText) {
         const parsedDate = new Date(item.dateText);
         if (!isNaN(parsedDate)) date = parsedDate.toISOString().split('T')[0];
       }
+      const fullTextForInsight = (fullText || item.summary || '').substring(0, INSIGHT_FULL_TEXT_CHARS);
       candidates.push({
         title: item.title,
         link: item.link,
@@ -441,7 +479,7 @@ async function crawlSource(source) {
         categories,
         sentiment,
         month: date.substring(0, 7).replace('-', '年') + '月',
-        fullTextForInsight: fullText.substring(0, INSIGHT_FULL_TEXT_CHARS) // fullText 作为主要输入传给 AI
+        fullTextForInsight
       });
     }
 

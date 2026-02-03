@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 
 // 从环境变量读取，Vercel 会在部署时注入 MONGODB_URI
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -192,16 +192,38 @@ async function saveNews(newsItem) {
       return { inserted: false, id: existing._id };
     }
     
-    const result = await collection.insertOne({
+    const doc = {
       ...newsItem,
+      sentiment: newsItem.sentiment || '中立',
       createdAt: new Date(),
       updatedAt: new Date()
-    });
-    
+    };
+    const result = await collection.insertOne(doc);
+
     return { inserted: true, id: result.insertedId };
   } catch (error) {
     console.error('Error saving news:', error);
     return { inserted: false, error: error.message };
+  }
+}
+
+async function updateNews(id, update) {
+  const db = await connectToDatabase();
+  if (!db) return { success: false, message: 'No database connection' };
+  try {
+    const collection = db.collection('news');
+    const _id = ObjectId.isValid(id) ? new ObjectId(id) : null;
+    if (!_id) return { success: false, message: 'Invalid id' };
+    const result = await collection.findOneAndUpdate(
+      { _id },
+      { $set: { ...update, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+    const doc = result && (result.value !== undefined ? result.value : result);
+    return doc ? { success: true, data: doc } : { success: false, message: 'Not found' };
+  } catch (error) {
+    console.error('Error updating news:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -333,6 +355,7 @@ module.exports = {
   connectToDatabase,
   getNews,
   saveNews,
+  updateNews,
   deleteOldNews,
   getUserFavorites,
   addFavorite,

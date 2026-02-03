@@ -1,5 +1,5 @@
 const OpenAI = require('openai');
-const { getNews, saveNews, getUserFavorites, addFavorite, removeFavorite, validateUser, connectToDatabase } = require('./db');
+const { getNews, saveNews, updateNews, getUserFavorites, addFavorite, removeFavorite, validateUser, connectToDatabase } = require('./db');
 
 // DeepSeek / OpenAI 兼容：baseURL 未设置时默认 DeepSeek
 const openai = new OpenAI({
@@ -62,10 +62,26 @@ module.exports = async function handler(req, res) {
   }
 
   const isNews = path === 'news' || url.includes('/api/news');
+  const isNewsById = path && path.startsWith('news/') && path.length > 5;
+  const newsId = isNewsById ? path.replace(/^news\/?/, '').split('/')[0] : null;
   const isLogin = path === 'login' || url.includes('/api/login');
   const isGenerateReport = path === 'generate-report' || url.includes('/api/generate-report');
 
   try {
+    // PATCH /api/news/:id — 更新单条新闻（如 sentiment）
+    if (isNewsById && newsId && (method === 'PATCH' || method === 'PUT')) {
+      const body = req.body || {};
+      const { sentiment } = body;
+      if (!sentiment || !['利好', '中立', '威胁'].includes(sentiment)) {
+        return res.status(400).json({ success: false, message: 'Body must include sentiment: 利好 | 中立 | 威胁' });
+      }
+      const result = await updateNews(newsId, { sentiment });
+      if (!result.success) {
+        return res.status(result.message === 'Not found' ? 404 : 500).json({ success: false, message: result.message });
+      }
+      return res.status(200).json({ success: true, data: result.data });
+    }
+
     // 逻辑分流 A：获取新闻列表 (GET /api/news)
     if (isNews && method === 'GET') {
       const { segment, category, userId } = req.query || {};
