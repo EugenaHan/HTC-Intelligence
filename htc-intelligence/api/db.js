@@ -1,6 +1,6 @@
 const { MongoClient } = require('mongodb');
 
-// Use environment variable or fallback to empty (will fail gracefully)
+// 从环境变量读取，Vercel 会在部署时注入 MONGODB_URI
 const MONGODB_URI = process.env.MONGODB_URI;
 
 let cachedDb = null;
@@ -9,7 +9,7 @@ let mongoClient = null;
 async function connectToDatabase() {
   // If no MongoDB URI, return null (will use fallback data)
   if (!MONGODB_URI) {
-    console.log('No MONGODB_URI configured, using fallback data');
+    console.log('No MONGODB_URI configured (check Vercel Env Vars), using fallback data');
     return null;
   }
 
@@ -157,20 +157,17 @@ async function getNews(filters = {}) {
   
   try {
     const collection = db.collection('news');
-    
-    // Default: show current month and last month
-    if (!filters.date) {
-      const now = new Date();
-      const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      
-      filters.date = {
-        $gte: lastMonth.toISOString().split('T')[0],
-        $lte: now.toISOString().split('T')[0]
-      };
+    const result = await collection.find(filters).sort({ date: -1 }).toArray();
+    // 若数据库无数据，返回预设数据，避免前端“抓不到新闻”
+    if (result.length === 0) {
+      console.log('No news in DB, using fallback');
+      let data = [...fallbackNews];
+      if (filters.categories && filters.categories.$in) {
+        data = data.filter(item => item.categories.some(cat => filters.categories.$in.includes(cat)));
+      }
+      return data;
     }
-    
-    return await collection.find(filters).sort({ date: -1 }).toArray();
+    return result;
   } catch (error) {
     console.error('Error fetching news:', error);
     return fallbackNews;
