@@ -7,8 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <style>
         :root {
             --primary: #0066cc;
@@ -502,34 +500,16 @@
                     <label>Password</label>
                     <input type="password" id="loginPassword" placeholder="Enter your password">
                 </div>
-                <button class="btn btn-primary" style="width: 100%;" onclick="signIn()">
+                <button class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">
                     <i class="fas fa-sign-in-alt"></i> Sign In
-                </button>
-                <hr style="margin: 15px 0; border: none; border-top: 1px solid var(--border);">
-                <button class="btn btn-outline" style="width: 100%;" onclick="signInWithGoogle()">
-                    <i class="fab fa-google"></i> Sign in with Google
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_FIREBASE_API_KEY",
-            authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
-            projectId: "YOUR_FIREBASE_PROJECT_ID",
-            storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
-            appId: "YOUR_FIREBASE_APP_ID"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        // API：使用相对路径 /api，与 Vercel 部署同域（勿用 localhost）
         const API_URL = '/api';
+        const USER_STORAGE_KEY = 'htc_user';
 
         // State
         let currentUser = null;
@@ -553,12 +533,20 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            checkAuthState();
+            const saved = localStorage.getItem(USER_STORAGE_KEY);
+            if (saved) {
+                try {
+                    currentUser = JSON.parse(saved);
+                } catch (e) {
+                    localStorage.removeItem(USER_STORAGE_KEY);
+                }
+            }
+            updateUserSection();
+            if (currentUser && currentUser.uid) loadFavorites();
             checkAPIHealth();
             loadNews();
         });
 
-        // Check API health
         async function checkAPIHealth() {
             try {
                 const response = await fetch(`${API_URL}/health`);
@@ -569,28 +557,17 @@
             }
         }
 
-        // Check authentication state
-        function checkAuthState() {
-            auth.onAuthStateChanged(user => {
-                currentUser = user;
-                updateUserSection();
-                if (user) {
-                    loadFavorites();
-                }
-            });
-        }
-
-        // Update user section UI
         function updateUserSection() {
             if (currentUser) {
+                const displayName = (currentUser.email || currentUser.name || 'User').split('@')[0];
                 userSection.innerHTML = `
                     <div class="user-info">
                         <div class="user-avatar">
                             <i class="fas fa-user"></i>
                         </div>
-                        <span class="user-name">${currentUser.email.split('@')[0]}</span>
+                        <span class="user-name">${displayName}</span>
                     </div>
-                    <button class="btn btn-outline" onclick="signOut()">
+                    <button class="btn btn-outline" onclick="handleLogout()">
                         <i class="fas fa-sign-out-alt"></i> Sign Out
                     </button>
                 `;
@@ -607,8 +584,8 @@
         function openModal() { loginModal.classList.add('active'); }
         function closeModal() { loginModal.classList.remove('active'); }
 
-        // Sign in with email/password：请求 /api/login，与 api/index.js 中 POST path===login 对应
-        async function signIn() {
+        // 登录：POST /api/login，成功则写入 localStorage 并关闭弹窗
+        async function handleLogin() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
             if (!email || !password) {
@@ -616,7 +593,6 @@
                 return;
             }
             try {
-                // 登录：POST /api/login
                 const response = await fetch(`${API_URL}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -625,9 +601,10 @@
                 const result = await response.json();
                 if (result.success && result.user) {
                     currentUser = result.user;
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
                     closeModal();
                     updateUserSection();
-                    if (currentUser && currentUser.uid) loadFavorites();
+                    if (currentUser.uid) loadFavorites();
                     renderNews();
                 } else {
                     alert(result.message || 'Sign in failed.');
@@ -637,22 +614,9 @@
             }
         }
 
-        // Sign in with Google
-        function signInWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .then(() => {
-                    closeModal();
-                })
-                .catch(error => {
-                    alert('Sign in failed: ' + error.message);
-                });
-        }
-
-        // Sign out（兼容 API 登录与 Firebase）
-        function signOut() {
-            if (typeof auth !== 'undefined' && auth.signOut) auth.signOut();
+        function handleLogout() {
             currentUser = null;
+            localStorage.removeItem(USER_STORAGE_KEY);
             favorites = [];
             updateUserSection();
             renderNews();
