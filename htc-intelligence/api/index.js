@@ -85,37 +85,28 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 逻辑分流 B：用户登录 (POST /api/login)，支持 username/password 或 email/password
+    // 逻辑分流 B：用户登录 (POST /api/login)，请求体为 { username, password }，查询 htc_intelligence.users
     if (isLogin && method === 'POST') {
       const body = req.body || {};
-      const { username, email, password } = body;
-      const loginId = username || email;
-      if (!loginId || !password) {
-        return res.status(400).json({ success: false, message: 'Username/email and password are required.' });
+      const { username, password } = body;
+      if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'Username and password are required.' });
       }
-      const user = await validateUser(loginId, password);
-      if (!user) {
-        const db = await connectToDatabase();
-        if (db) {
-          const u = await db.collection('users').findOne(
-            username ? { username, password } : { email: email || username, password }
-          );
-          if (u) {
-            return res.status(200).json({
-              success: true,
-              user: {
-                uid: u._id.toString(),
-                email: u.email || u.username,
-                name: u.username || u.email
-              }
-            });
-          }
-        }
+      const db = await connectToDatabase();
+      if (!db) {
+        return res.status(503).json({ success: false, message: 'Database not available.' });
+      }
+      const u = await db.collection('users').findOne({ username, password });
+      if (!u) {
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
       }
       return res.status(200).json({
         success: true,
-        user: { uid: user.uid, email: user.email, name: user.email }
+        user: {
+          uid: u._id.toString(),
+          email: u.email || u.username,
+          name: u.username || u.email
+        }
       });
     }
 

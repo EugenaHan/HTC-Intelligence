@@ -27,9 +27,8 @@ async function connectToDatabase() {
       await mongoClient.connect();
     }
 
-    // 数据库名：htc_intelligence（与 MONGODB_URI 中库名一致）
-    const dbName = process.env.MONGODB_DB_NAME || 'htc_intelligence';
-    const db = mongoClient.db(dbName);
+    // 明确使用数据库名 htc_intelligence（与 MongoDB users 集合所在库一致）
+    const db = mongoClient.db('htc_intelligence');
     cachedDb = db;
     return db;
   } catch (error) {
