@@ -1,0 +1,30 @@
+# 工作流名称：每日定时访问线上接口
+name: Daily API Call
+
+on:
+  # 1. 定时任务：每天北京时间早上 9 点执行（UTC 1:00，北京 = UTC+8）
+  schedule:
+    - cron: '0 1 * * *'
+  # 2. 手动触发：在 GitHub 仓库 Actions 页可点击 "Run workflow" 测试
+  workflow_dispatch:
+
+jobs:
+  call-api:
+    # 3. 使用 GitHub 提供的 Ubuntu 最新版虚拟机
+    runs-on: ubuntu-latest
+
+    steps:
+      # 使用 curl 请求你的线上接口
+      - name: 请求线上接口
+        env:
+          # 接口地址（Settings → Secrets → 添加 API_URL）
+          API_URL: ${{ secrets.API_URL }}
+          # Bearer 密钥（Settings → Secrets → 添加 CRON_SECRET，与后端环境变量一致）
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          # -H：携带 Authorization: Bearer <CRON_SECRET> 做服务端校验
+          # -f：HTTP 4xx/5xx 时返回非 0，便于 Actions 标为失败
+          # -s：静默模式 -o /dev/null：不输出 body，-w：只打印状态码
+          curl -f -s -o /dev/null -w "HTTP %{http_code}\n" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$API_URL"

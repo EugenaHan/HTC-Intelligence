@@ -100,6 +100,7 @@ npx vercel --prod
 | `FIREBASE_API_KEY` | Firebase API Key |
 | `FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain |
 | `FIREBASE_PROJECT_ID` | Firebase Project ID |
+| `OPENAI_API_KEY` | OpenAI API Key（用于「Market Intelligence Executive Summary」报告生成） |
 
 7. 点击 **Deploy**
 8. 等待部署完成（约2-3分钟）
