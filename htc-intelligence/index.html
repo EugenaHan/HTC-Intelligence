@@ -229,29 +229,19 @@
         .tag-flight { background: #e0f7fa; color: #00838f; }
         .tag-market { background: #e8eaf6; color: #3f51b5; }
 
-        /* Sentiment selector: same tier as category tags, button group */
-        .sentiment-selector {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .sentiment-tag {
+        /* Sentiment: read-only tag from DB (AI-determined), Green 利好 / Gray 中立 / Red 威胁 */
+        .sentiment-badge {
             padding: 3px 8px;
             border-radius: 10px;
             font-size: 10px;
             font-weight: 600;
-            border: 1px solid transparent;
-            cursor: pointer;
-            background: #e9ecef;
-            color: #495057;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
         }
-        .sentiment-tag:hover { opacity: 0.9; }
-        .sentiment-tag--positive { color: #155724; }
-        .sentiment-tag--positive.active { background: #d4edda; color: #155724; }
-        .sentiment-tag--neutral { color: #383d41; }
-        .sentiment-tag--neutral.active { background: #e2e3e5; color: #383d41; }
-        .sentiment-tag--negative { color: #721c24; }
-        .sentiment-tag--negative.active { background: #f8d7da; color: #721c24; }
+        .sentiment-positive { background: #d4edda; color: #155724; }
+        .sentiment-neutral { background: #e2e3e5; color: #383d41; }
+        .sentiment-negative { background: #f8d7da; color: #721c24; }
 
         .card-body { padding: 0 15px 10px; flex: 1; }
 
@@ -1016,11 +1006,10 @@
                             ${(news.categories || []).map(cat => `
                                 <span class="category-tag ${getCategoryClass(cat)}">${cat}</span>
                             `).join('')}
-                            <div class="sentiment-selector" data-news-id="${news._id}">
-                                <button type="button" class="sentiment-tag sentiment-tag--positive ${(news.sentiment || '中立') === '利好' ? 'active' : ''}" data-sentiment="利好" onclick="updateSentiment('${news._id}', '利好', this)">利好</button>
-                                <button type="button" class="sentiment-tag sentiment-tag--neutral ${(news.sentiment || '中立') === '中立' ? 'active' : ''}" data-sentiment="中立" onclick="updateSentiment('${news._id}', '中立', this)">中立</button>
-                                <button type="button" class="sentiment-tag sentiment-tag--negative ${(news.sentiment || '中立') === '威胁' ? 'active' : ''}" data-sentiment="威胁" onclick="updateSentiment('${news._id}', '威胁', this)">威胁</button>
-                            </div>
+                            <span class="sentiment-badge ${getSentimentClass(news.sentiment)}">
+                                <i class="fas ${getSentimentIcon(news.sentiment)}"></i>
+                                ${news.sentiment || '中立'}
+                            </span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1086,24 +1075,6 @@
         function getSentimentIcon(sentiment) {
             const map = { '利好': 'fa-arrow-trend-up', '威胁': 'fa-arrow-trend-down', '中立': 'fa-minus' };
             return map[sentiment] || 'fa-minus';
-        }
-
-        async function updateSentiment(newsId, sentiment, clickedBtn) {
-            try {
-                const res = await fetch(`/api/news/${newsId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sentiment })
-                });
-                if (!res.ok) throw new Error(await res.text());
-                const container = clickedBtn.closest('.sentiment-selector');
-                if (container) {
-                    container.querySelectorAll('.sentiment-tag').forEach(btn => btn.classList.remove('active'));
-                    clickedBtn.classList.add('active');
-                }
-            } catch (e) {
-                console.error('Update sentiment failed:', e);
-            }
         }
 
         // Copy report — always copy the full English version

@@ -15,11 +15,28 @@ const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
 // 混合关键词：中文 + 英文，扩大捕获面
 const KEYWORDS = ['China outbound', 'Chinese tourists', 'US visa', 'Hawaii tourism', '中美直航', '出境游趋势', '美国签证', '夏威夷旅游'];
 
-// 核心配置：精简信源，移除极易封锁的二级路径
+// 动态时间窗口：仅接受当月和上个月的新闻
+function isRecentEnough(dateString) {
+  if (!dateString) return false;
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  const pubDate = new Date(dateString);
+  if (isNaN(pubDate.getTime())) return false;
+  const m = pubDate.getMonth();
+  const y = pubDate.getFullYear();
+  if (y === currentYear && m === currentMonth) return true;
+  if (y === lastMonthYear && m === lastMonth) return true;
+  return false;
+}
+
+// 核心配置：精简信源；RSS 使用 when:60d 仅取近两月
 const NEWS_SOURCES = [
   {
     name: 'Google News RSS (Global)',
-    searchUrl: 'https://news.google.com/rss/search?q=China+outbound+travel+Hawaii+tourism&hl=en-US&gl=US&ceid=US:en',
+    searchUrl: 'https://news.google.com/rss/search?q=Hawaii+tourism+China+outbound+when:60d&hl=en-US&gl=US&ceid=US:en',
     isRSS: true
   },
   {
@@ -36,11 +53,18 @@ const NEWS_SOURCES = [
   }
 ];
 
-// AI 洞察逻辑：如果详情页抓取失败，就用摘要，不抛弃新闻（Fallback 机制）
-async function generateInsight(title, summary) {
-  if (!DEEPSEEK_KEY) return "请配置 API Key 以获取 AI 洞察。";
+// AI 洞察 + 情感：DeepSeek 返回 sentiment（利好/中立/威胁）与 insight
+async function generateInsightAndSentiment(title, summary) {
+  const fallback = { insight: "请配置 API Key 以获取 AI 洞察。", sentiment: "中立" };
+  if (!DEEPSEEK_KEY) return fallback;
 
-  const prompt = `你是一位夏威夷旅游局（HTB）的战略顾问。请分析这篇新闻，提供 50 字以内的专业中文洞察。标题：${title}，摘要：${summary}`;
+  const prompt = `你是一位夏威夷旅游局（HTB）的战略顾问。分析这篇新闻对夏威夷旅游市场的影响。
+标题：${title}
+摘要：${summary}
+
+请严格按以下格式回复，不要添加其他内容：
+第一行：情感（只能是以下三者之一）利好 或 中立 或 威胁
+第二行：50字以内的专业中文洞察`;
 
   try {
     const res = await axios.post(`${DEEPSEEK_BASE}/v1/chat/completions`, {
@@ -51,9 +75,19 @@ async function generateInsight(title, summary) {
       headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
       timeout: 15000
     });
-    return res.data?.choices?.[0]?.message?.content?.trim() || "分析暂无结果";
+    const raw = res.data?.choices?.[0]?.message?.content?.trim() || "";
+    const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    let sentiment = "中立";
+    if (lines[0]) {
+      const first = lines[0].replace(/[。.]+$/, "").trim();
+      if (first === "利好" || first === "中立" || first === "威胁") sentiment = first;
+      else if (lines[0].includes("利好")) sentiment = "利好";
+      else if (lines[0].includes("威胁")) sentiment = "威胁";
+    }
+    const insight = lines[1] || raw || "分析暂无结果";
+    return { insight, sentiment };
   } catch (err) {
-    return "AI 分析暂不可用，请稍后查看。";
+    return { insight: "AI 分析暂不可用，请稍后查看。", sentiment: "中立" };
   }
 }
 
@@ -115,22 +149,23 @@ async function crawlAll() {
     allNews.push(...news);
   }
 
-  // 1. 过滤：只要标题或摘要里有任何一个关键词就保留
+  // 1. 过滤：关键词 + 动态时间窗口（仅当月和上个月）
   const filtered = allNews.filter(n =>
-    KEYWORDS.some(kw => (n.title + n.summary).toLowerCase().includes(kw.toLowerCase()))
+    KEYWORDS.some(kw => (n.title + n.summary).toLowerCase().includes(kw.toLowerCase())) && isRecentEnough(n.date)
   );
 
-  console.log(`✅ Total articles after filtering: ${filtered.length}`);
+  console.log(`✅ Total articles after filtering (keyword + date): ${filtered.length}`);
 
   const API_URL = process.env.API_URL || 'http://localhost:3000/api';
 
-  // 2. 为过滤后的新闻生成 AI 洞察并推送
+  // 2. 为过滤后的新闻生成 AI 洞察与情感并推送
   for (const item of filtered) {
-    console.log(`🤖 Generating Insight for: ${item.title}`);
-    item.insight = await generateInsight(item.title, item.summary);
+    console.log(`🤖 Generating Insight + Sentiment for: ${item.title}`);
+    const { insight, sentiment } = await generateInsightAndSentiment(item.title, item.summary);
+    item.insight = insight;
+    item.sentiment = sentiment;
     item.month = item.date ? item.date.substring(0, 7).replace('-', '年') + '月' : new Date().toISOString().slice(0, 7).replace('-', '年') + '月';
     item.categories = item.categories || ['Market Trend'];
-    item.sentiment = item.sentiment || '中立';
 
     // 3. 推送到 API / MongoDB
     try {
