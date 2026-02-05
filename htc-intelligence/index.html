@@ -197,8 +197,8 @@
         /* News Grid: strict grid, no masonry/columns — prevents misalignment and empty gaps */
         .news-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 24px;
             align-items: start;
         }
 
@@ -212,7 +212,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            min-height: 450px;
+            min-height: 480px;
         }
 
         .news-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
@@ -255,9 +255,10 @@
             align-items: center;
             gap: 3px;
         }
-        .sentiment-positive { background: #e6fffa; color: #285e61; }
-        .sentiment-neutral { background: #f7fafc; color: #2d3748; }
-        .sentiment-negative { background: #fff5f5; color: #822727; }
+        /* Professional sentiment colors */
+        .sentiment-positive { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .sentiment-neutral { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        .sentiment-negative { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
         .card-body {
             padding: 0 15px 10px;
@@ -280,11 +281,12 @@
         /* HTC Strategic Insight: fixed min-height so cards don't jump */
         .insight-section {
             margin: 10px 0;
+            margin-top: auto; /* 推到底部对齐 */
             padding: 12px 14px;
             border-radius: 8px;
-            background: #e8f4fc;
+            background: #f0f7ff;
             border: 1px solid #b6d4fe;
-            border-left: 4px solid #0d6efd;
+            border-left: 4px solid #0066cc;
             min-height: 80px;
             flex: 1 1 auto;
         }
@@ -294,7 +296,7 @@
             gap: 6px;
             font-size: 11px;
             font-weight: 600;
-            color: #0d6efd;
+            color: #0066cc;
             margin-bottom: 6px;
         }
         .insight-section .insight-text {
@@ -343,7 +345,7 @@
             font-style: italic;
         }
         .insight-section.insight-pending .refresh-analysis-icon {
-            color: #0d6efd;
+            color: #0066cc;
             font-size: 12px;
             cursor: pointer;
             opacity: 0.8;
