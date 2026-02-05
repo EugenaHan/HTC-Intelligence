@@ -214,6 +214,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 20px;
+            align-items: start;
         }
 
         /* News Card */
@@ -229,6 +230,7 @@
             text-decoration: none;
             color: inherit;
             position: relative;
+            min-height: 450px;
         }
 
         .news-card:hover {
@@ -356,6 +358,21 @@
             font-size: 12px;
             color: var(--dark);
             line-height: 1.4;
+        }
+
+        .insight-text.pending {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            color: var(--gray);
+            font-style: italic;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
         }
 
         .external-link-icon {
@@ -627,8 +644,8 @@
         let newsData = [];
         let currentSegment = 'all';
 
-        // Load news data
-        fetch('news_data.json')
+        // Load news data from MongoDB API
+        fetch('/api/news')
             .then(response => response.json())
             .then(data => {
                 newsData = data;
@@ -636,7 +653,6 @@
             })
             .catch(error => {
                 console.error('Error loading news data:', error);
-                // Fallback data
                 newsData = [];
                 renderNews();
             });
@@ -810,7 +826,7 @@ SHORT HAUL
                             </div>
                             <div class="insight-content">
                                 <div class="insight-label">HTA Insight</div>
-                                <div class="insight-text">${news.insight}</div>
+                                <div class="insight-text${news.insight && news.insight.includes('Pending analysis') ? ' pending' : ''}">${news.insight}</div>
                             </div>
                         </div>
                     </div>
