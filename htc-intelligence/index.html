@@ -43,6 +43,14 @@
         .pill.fav { color: #dc2626; border-color: #fecaca; }
         .pill.fav.active { background: #dc2626; color: white; }
 
+        /* Month Dropdown */
+        .month-select {
+            padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 20px;
+            font-size: 13px; font-weight: 500; color: #4b5563; outline: none;
+            background: white; cursor: pointer; margin-left: auto;
+        }
+        .month-select:hover { border-color: var(--primary); }
+
         /* 4. News Grid */
         .news-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
 
@@ -134,6 +142,10 @@
             <button class="pill" data-f="Short Haul">Short Haul</button>
             <button class="pill" data-f="Long Haul">Long Haul</button>
             <button class="pill fav" data-f="fav">♥ Favorites</button>
+
+            <select id="monthSelect" class="month-select" onchange="applyFilters()">
+                <option value="all">📅 All Months</option>
+            </select>
         </div>
 
         <div class="news-list" id="grid">
@@ -165,7 +177,28 @@
         let USER = JSON.parse(localStorage.getItem('htc_user'));
         let SELECTED = new Set();
 
-        window.onload = () => { updateAuthUI(); fetchNews(); };
+        window.onload = () => {
+            initMonths();
+            updateAuthUI();
+            fetchNews();
+        };
+
+        // 初始化月份下拉框（最近6个月）
+        function initMonths() {
+            const sel = document.getElementById('monthSelect');
+            const now = new Date();
+
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const label = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = `📅 ${label}`;
+                sel.appendChild(opt);
+            }
+        }
 
         // 1. Fetch Data
         async function fetchNews() {
@@ -187,8 +220,10 @@
                     NEWS = json.data.map(n => ({
                         ...n,
                         isFav: favs.includes(n._id) || n.isFavorite
-                    }));
-                    render(NEWS);
+                    })).sort((a,b) => new Date(b.date) - new Date(a.date)); // 按时间倒序
+
+                    // 应用初始过滤器
+                    applyFilters();
                 }
             } catch(e) {
                 document.getElementById('grid').innerHTML = '<div style="text-align:center; padding:40px;">API Error. Please check backend.</div>';
@@ -206,6 +241,9 @@
             grid.innerHTML = list.map(item => {
                 // Summary Fallback
                 const summary = item.summary || item.description || item.snippet || 'No summary available...';
+
+                // 优先显示中文标题
+                const title = item.title_cn || item.title;
 
                 // Sentiment Badge
                 let sentClass = 'neu';
@@ -225,7 +263,7 @@
                 const cardClass = SELECTED.has(item._id) ? 'card selected' : 'card';
 
                 return `
-                <div class="${cardClass}" id="card-${item._id}">
+                <div class="${cardClass}" id="card-${item._id}" onclick="window.open('${item.url}', '_blank')">
                     <div class="card-header">
                         <div class="tags">
                             <span class="badge ${sentClass}">${item.sentiment || 'Neutral'}</span>
@@ -233,7 +271,7 @@
                         </div>
                     </div>
 
-                    <h3 class="card-title">${item.title}</h3>
+                    <h3 class="card-title">${title}</h3>
                     <p class="card-summary">${summary}</p>
 
                     <div class="insight">
@@ -241,7 +279,7 @@
                         <p>${ins}</p>
                     </div>
 
-                    <div class="action-bar">
+                    <div class="action-bar" onclick="event.stopPropagation()">
                         <label class="check-group">
                             <input type="checkbox" onchange="toggleSelect('${item._id}')" ${checked}>
                             Add to report
@@ -312,10 +350,8 @@
             const item = NEWS.find(n => n._id === id);
             item.isFav = !item.isFav;
 
-            // Re-render only if looking at favs filter
-            const currentFilter = document.querySelector('.pill.active').dataset.f;
-            if(currentFilter === 'fav') render(NEWS.filter(n => n.isFav));
-            else render(filterNews(currentFilter));
+            // 使用 applyFilters 重新渲染（包含月份和类别过滤）
+            applyFilters();
 
             try {
                 const method = item.isFav ? 'POST' : 'DELETE';
@@ -332,14 +368,41 @@
             document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
             e.target.classList.add('active');
 
-            const f = e.target.dataset.f;
-            render(filterNews(f));
+            applyFilters();
         });
 
+        // 核心过滤逻辑（类别 + 月份）
+        window.applyFilters = () => {
+            const catBtn = document.querySelector('.pill.active');
+            const category = catBtn ? catBtn.dataset.f : 'all';
+            const month = document.getElementById('monthSelect').value;
+
+            const filtered = NEWS.filter(item => {
+                // 1. 收藏模式：忽略月份限制，显示所有收藏
+                if (category === 'fav') {
+                    return item.isFav;
+                }
+
+                // 2. 类别过滤
+                let catMatch = (category === 'all') ||
+                    (item.categories && item.categories.includes(category));
+
+                // 3. 月份过滤（收藏模式下跳过）
+                let monthMatch = true;
+                if (month !== 'all') {
+                    const itemMonth = item.date ? item.date.substring(0, 7) : '';
+                    monthMatch = (itemMonth === month);
+                }
+
+                return catMatch && monthMatch;
+            });
+
+            render(filtered);
+        };
+
         function filterNews(f) {
-            if(f === 'all') return NEWS;
-            if(f === 'fav') return NEWS.filter(n => n.isFav);
-            return NEWS.filter(n => (n.categories||[]).includes(f));
+            // 保留此函数以兼容旧代码，但实际逻辑已移至 applyFilters
+            return applyFilters();
         }
 
         // 7. Auth Logic

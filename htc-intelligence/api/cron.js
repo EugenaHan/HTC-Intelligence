@@ -1,220 +1,244 @@
 #!/usr/bin/env node
 /**
- * 降级增效：混合爬取模式，优先保障数据量，DeepSeek 洞察 + Fallback，环境适配（证书 / Node）。
- * Run: node api/cron.js (from htc-intelligence directory)
+ * 智能爬虫 4.0：RSS 矩阵 + 90天窗口 + 关键词降噪
+ * Run: node api/cron.js
  */
+require('dotenv').config({ path: '.env.local' });
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { saveNews, connectToDatabase } = require('./db');
 
-// 关键修复 1：解决部分中文网站证书报错问题
+// 环境适配
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
 const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
 const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
 
-// 日期解析：失败时默认为当前日期，不丢弃
-function parseDate(dateString) {
-  if (!dateString) return new Date().toISOString().split('T')[0];
-  const d = new Date(dateString);
-  return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
-}
+// --- 1. 配置中心 ---
 
-// 动态时间窗口：仅接受当月和上个月的新闻
-function isRecentEnough(dateString) {
-  if (!dateString) return false;
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-  const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-  const pubDate = new Date(dateString);
-  if (isNaN(pubDate.getTime())) return false;
-  const m = pubDate.getMonth();
-  const y = pubDate.getFullYear();
-  if (y === currentYear && m === currentMonth) return true;
-  if (y === lastMonthYear && m === lastMonth) return true;
-  return false;
-}
+// 时间窗口：90天 (本月 + 上月 + 上上月)
+const DATE_WINDOW_DAYS = 90;
 
-// 核心配置：精简信源；RSS 增加多样性（China travel, US tourism policy）+ when:60d
+// 稳定信源池 (全部使用 RSS，避免 404 和反爬)
 const NEWS_SOURCES = [
   {
-    name: 'Google News RSS (Global)',
-    searchUrl: 'https://news.google.com/rss/search?q=China+travel+US+tourism+policy+Hawaii+tourism+China+outbound+when:60d&hl=en-US&gl=US&ceid=US:en',
-    isRSS: true
+    name: 'Google News (China Outbound)',
+    // 中国出境游 + 航线 + 签证新闻（增加超时和重试）
+    url: 'https://news.google.com/rss/search?q=China+outbound+tourism+OR+Chinese+traveler+OR+US+China+flights+when:30d&hl=en-US&gl=US&ceid=US:en',
+    type: 'rss'
   },
   {
-    name: 'Travel And Tour World',
-    baseUrl: 'https://www.travelandtourworld.com',
-    searchUrl: 'https://www.travelandtourworld.com/news/',
-    selectors: { articles: 'article.post', title: 'h2.entry-title a', link: 'h2.entry-title a', summary: '.entry-content p' }
+    name: 'TTR Weekly (SE Asia Competition)',
+    // 东南亚（短线）竞争对手动态
+    url: 'https://www.ttrweekly.com/site/feed/',
+    type: 'rss'
   },
   {
-    name: 'Dragon Trail',
-    baseUrl: 'https://www.dragontrail.com',
-    searchUrl: 'https://www.dragontrail.com/resources/blog',
-    selectors: { articles: '.blog-post', title: 'h2 a', link: 'h2 a', summary: '.excerpt' }
+    name: 'Skift (Global Trends)',
+    // 全球大趋势
+    url: 'https://skift.com/feed/',
+    type: 'rss'
   }
 ];
 
-// AI 守门员：仅标题判断是否与中国出境游/全球旅游趋势相关，返回 true/false
-async function isRelevantByAI(title) {
-  if (!DEEPSEEK_KEY) return true;
-  try {
-    const res = await axios.post(`${DEEPSEEK_BASE}/v1/chat/completions`, {
-      model: 'deepseek-chat',
-      messages: [{ role: 'user', content: `Is this news related to China outbound travel or global tourism trends? Answer only YES or NO. Title: ${title}` }],
-      max_tokens: 10
-    }, {
-      headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
-      timeout: 10000
-    });
-    const raw = (res.data?.choices?.[0]?.message?.content || '').trim().toUpperCase();
-    return raw.startsWith('YES');
-  } catch (err) {
-    return true;
-  }
+// --- 2. 辅助函数 ---
+
+// 自动分类器
+function autoCategorize(title, summary) {
+  const text = (title + ' ' + summary).toLowerCase();
+
+  const shortHaulKw = ['china', 'japan', 'korea', 'thailand', 'vietnam', 'singapore', 'malaysia', 'bali', 'asia'];
+  const longHaulKw = ['us', 'usa', 'united states', 'hawaii', 'europe', 'uk', 'france', 'germany', 'australia', 'canada'];
+  const trendKw = ['luxury', 'spending', 'data', 'report', 'forecast', 'generation z', 'visa'];
+
+  const categories = [];
+  if (shortHaulKw.some(k => text.includes(k))) categories.push('Short Haul');
+  if (longHaulKw.some(k => text.includes(k))) categories.push('Long Haul');
+  if (trendKw.some(k => text.includes(k))) categories.push('消费趋势');
+
+  // 默认兜底
+  if (categories.length === 0) categories.push('Market Trend');
+  return categories;
 }
 
-// AI 洞察 + 情感：DeepSeek 返回 sentiment（利好/中立/威胁）与 insight
-async function generateInsightAndSentiment(title, summary) {
-  const fallback = { insight: "请配置 API Key 以获取 AI 洞察。", sentiment: "中立" };
-  if (!DEEPSEEK_KEY) return fallback;
+// 智能日期解析
+function parseDate(dateString) {
+  if (!dateString) return new Date().toISOString();
+  const d = new Date(dateString);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
 
-  const prompt = `你是一位夏威夷旅游局（HTB）的战略顾问。分析这篇新闻对夏威夷旅游市场的影响。
-标题：${title}
-摘要：${summary}
+// 时间过滤器 (90天窗口)
+function isRecent(dateString) {
+  if (!dateString) return true;
+  const now = new Date();
+  const pub = new Date(dateString);
+  if (isNaN(pub.getTime())) return true; // 无法解析则保留
 
-请严格按以下格式回复，不要添加其他内容：
-第一行：情感（只能是以下三者之一）利好 或 中立 或 威胁
-第二行：50字以内的专业中文洞察`;
+  const diffTime = Math.abs(now - pub);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays <= DATE_WINDOW_DAYS;
+}
+
+// --- 3. AI 分析核心 ---
+
+async function analyzeNews(title, summary) {
+  if (!DEEPSEEK_KEY) {
+    return { insight: "AI Key 未配置", sentiment: "中立", title_cn: title };
+  }
+
+  // 这里的 Prompt 专门加入了翻译指令
+  const prompt = `角色：夏威夷旅游局(HTB)分析师。
+任务：分析新闻《${title}》。
+1. 翻译标题为通顺的中文。
+2. 判定对夏威夷市场情感(利好/中立/威胁)。
+3. 提供30字以内中文战略洞察。
+格式：返回纯JSON（不要Markdown）{"title_cn": "...", "sentiment": "利好/中立/威胁", "insight": "..."}`;
 
   try {
     const res = await axios.post(`${DEEPSEEK_BASE}/v1/chat/completions`, {
       model: 'deepseek-chat',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 150
+      response_format: { type: 'json_object' },
+      max_tokens: 250
     }, {
       headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
-      timeout: 15000
+      timeout: 40000 // 给足时间
     });
-    const raw = res.data?.choices?.[0]?.message?.content?.trim() || "";
-    const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-    let sentiment = "中立";
-    if (lines[0]) {
-      const first = lines[0].replace(/[。.]+$/, "").trim();
-      if (first === "利好" || first === "中立" || first === "威胁") sentiment = first;
-      else if (lines[0].includes("利好")) sentiment = "利好";
-      else if (lines[0].includes("威胁")) sentiment = "威胁";
-    }
-    const insight = lines[1] || raw || "分析暂无结果";
-    return { insight, sentiment };
+
+    const json = JSON.parse(res.data.choices[0].message.content);
+    return {
+      title_cn: json.title_cn || title,
+      insight: json.insight || "AI 解析中...",
+      sentiment: json.sentiment || "中立"
+    };
   } catch (err) {
-    return { insight: "AI 分析暂不可用，请稍后查看。", sentiment: "中立" };
+    console.error(`AI 分析失败: ${err.message}`);
+    return { insight: "AI 繁忙", sentiment: "中立", title_cn: title };
   }
 }
 
-async function crawlRSS(source) {
-  console.log(`📡 Fetching RSS: ${source.name}`);
+// --- 4. 抓取引擎 ---
+
+async function fetchRSS(source) {
+  console.log(`📡 请求源: ${source.name}`);
   try {
-    const res = await axios.get(source.searchUrl);
+    // 伪装成浏览器，解决 Google News 超时问题
+    const res = await axios.get(source.url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive'
+      },
+      timeout: 20000,
+      maxRedirects: 5
+    });
+
     const $ = cheerio.load(res.data, { xmlMode: true });
-    const articles = [];
+    const items = [];
+
     $('item').each((i, el) => {
-      if (i < 15) {
-        const pubDateText = $(el).find('pubDate').text();
-        articles.push({
-          title: $(el).find('title').text(),
-          url: $(el).find('link').text(),
-          summary: $(el).find('description').text().substring(0, 200),
-          source: source.name,
-          date: parseDate(pubDateText)
-        });
-      }
-    });
-    return articles;
-  } catch (e) {
-    console.error(`RSS Error: ${e.message}`);
-    return [];
-  }
-}
+      if (i > 15) return; // 每个源限制15条
 
-async function crawlWeb(source) {
-  console.log(`🕷️ Crawling Web: ${source.name}`);
-  try {
-    const res = await axios.get(source.searchUrl, { timeout: 15000 });
-    const $ = cheerio.load(res.data);
-    const articles = [];
-    $(source.selectors.articles).each((i, el) => {
-      const title = $(el).find(source.selectors.title).text().trim();
-      const link = $(el).find(source.selectors.link).attr('href');
-      const summary = $(el).find(source.selectors.summary).text().trim();
-      if (title && link) {
-        articles.push({
+      const title = $(el).find('title').text().trim();
+      const link = $(el).find('link').text().trim();
+      const pubDate = $(el).find('pubDate').text();
+
+      // 摘要清洗：去除 HTML 标签
+      let summary = $(el).find('description').text() || $(el).find('content\\:encoded').text();
+      summary = summary.replace(/<[^>]+>/g, '').trim().substring(0, 200) || title;
+
+      // 关键词过滤：确保新闻和中国或旅游相关（减少噪音）
+      const fullText = (title + ' ' + summary).toLowerCase();
+      const keywords = ['china', 'chinese', 'tourism', 'travel', 'flight', 'visa', 'luxury', 'hotel', 'hawaii', 'asia', 'us', 'europe'];
+
+      if (link && keywords.some(k => fullText.includes(k))) {
+        items.push({
           title,
-          url: link.startsWith('http') ? link : (source.baseUrl || '') + link,
-          summary: summary.substring(0, 300),
+          url: link,
+          summary,
           source: source.name,
-          date: parseDate(null)
+          date: parseDate(pubDate)
         });
       }
     });
-    return articles;
+
+    console.log(`   ✅ ${source.name}: 提取 ${items.length} 篇文章`);
+    return items;
   } catch (e) {
-    console.error(`Web Error: ${e.message}`);
+    console.error(`❌ ${source.name} 失败: ${e.message}`);
     return [];
   }
 }
 
-async function crawlAll() {
+// --- 5. 主程序 ---
+
+async function start() {
+  console.log("🚀 启动智能情报中心 4.0 (RSS矩阵版)...");
+
+  // 连接数据库
+  await connectToDatabase();
+  console.log("✅ 数据库连接成功");
+
   let allNews = [];
+
+  // 串行抓取所有源（避免并发问题）
   for (const src of NEWS_SOURCES) {
-    const news = src.isRSS ? await crawlRSS(src) : await crawlWeb(src);
-    allNews.push(...news);
+    const items = await fetchRSS(src);
+    allNews = allNews.concat(items);
   }
 
-  // 1. 放松关键词：来自可信信源的先全保留，仅按动态时间窗口（当月+上个月）过滤
-  const filtered = allNews.filter(n => isRecentEnough(n.date));
+  console.log(`\n📊 总共抓取 ${allNews.length} 篇文章`);
 
-  console.log(`✅ Total articles (date filter only): ${filtered.length}`);
+  // 时间过滤
+  const freshNews = allNews.filter(n => isRecent(n.date));
+  console.log(`📅 90天窗口内: ${freshNews.length} 篇文章`);
 
-  const API_URL = process.env.API_URL || 'http://localhost:3000/api';
+  if (freshNews.length === 0) {
+    console.log('⚠️  没有符合条件的新闻');
+    process.exit(0);
+  }
 
-  // 2. AI 守门员 + 洞察：相关则生成洞察，不相关或失败也强制入库（Pending analysis）
-  for (const item of filtered) {
-    item.month = (item.date || '').substring(0, 7).replace('-', '年') + '月' || new Date().toISOString().slice(0, 7).replace('-', '年') + '月';
-    item.categories = item.categories || ['Market Trend'];
+  console.log('\n🤖 开始 AI 分析...\n');
 
-    const relevant = await isRelevantByAI(item.title);
-    if (relevant) {
-      try {
-        const { insight, sentiment } = await generateInsightAndSentiment(item.title, item.summary);
-        item.insight = insight;
-        item.sentiment = sentiment || '中立';
-      } catch (e) {
-        item.insight = 'Pending analysis';
-        item.sentiment = '中立';
-      }
-    } else {
-      item.insight = 'Pending analysis';
-      item.sentiment = '中立';
-    }
+  let successCount = 0;
+  let failCount = 0;
 
+  // 串行处理，避免 API 并发限制
+  for (const item of freshNews) {
+    // 1. 自动分类
+    item.categories = autoCategorize(item.title, item.summary);
+
+    // 2. AI 处理
+    const ai = await analyzeNews(item.title, item.summary);
+    item.title_cn = ai.title_cn;
+    item.insight = ai.insight;
+    item.sentiment = ai.sentiment;
+
+    // 3. 入库
     try {
-      await axios.post(`${API_URL}/news`, item, { headers: { 'Content-Type': 'application/json' } });
-      console.log('Successfully pushed to MongoDB:', item.title);
+      const result = await saveNews(item);
+      if (result.inserted) {
+        successCount++;
+        console.log(`✅ [${item.categories.join(', ')}] ${item.title_cn}`);
+      } else {
+        failCount++;
+        console.log(`⚠️  ${item.title_cn} (已存在)`);
+      }
     } catch (e) {
-      console.error(`Save Error: ${e.message}`);
+      failCount++;
+      console.error(`❌ 入库失败: ${e.message}`);
     }
   }
+
+  console.log(`\n📈 任务统计: 成功 ${successCount} 篇，失败/跳过 ${failCount} 篇`);
+  console.log('\n🎉 智能情报中心 4.0 任务完成！');
+  process.exit(0);
 }
 
-crawlAll()
-  .then(() => {
-    console.log('Cron crawl completed successfully.');
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error('Cron crawl failed:', err);
-    process.exit(1);
-  });
+start().catch(err => {
+  console.error('\n💥 程序异常:', err);
+  process.exit(1);
+});

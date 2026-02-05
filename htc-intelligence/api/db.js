@@ -22,7 +22,9 @@ async function connectToDatabase() {
       mongoClient = new MongoClient(MONGODB_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000, // 5 second timeout
+        // 关键修复：增加超时时间到 15 秒，防止网络波动导致连接失败
+        serverSelectionTimeoutMS: 15000,
+        socketTimeoutMS: 45000,
       });
       await mongoClient.connect();
     }
