@@ -197,9 +197,9 @@
         /* News Grid: strict grid, no masonry/columns — prevents misalignment and empty gaps */
         .news-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 24px;
-            align-items: stretch;
+            align-items: start;
         }
 
         /* News Card: consistent vertical structure, flex column */
@@ -1171,6 +1171,10 @@
                 '中国经济趋势': 'tag-economy',
                 'Short Haul': 'tag-short',
                 'Long Haul': 'tag-long',
+                'Northeast Asia': 'tag-short',
+                'Southeast Asia': 'tag-short',
+                'Oceania': 'tag-long',
+                'Middle East': 'tag-long',
                 'Visa Policy': 'tag-visa',
                 'Flight Routes': 'tag-flight',
                 'Market Data': 'tag-market',
