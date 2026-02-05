@@ -400,6 +400,8 @@
 
         .favorite-btn.active { color: var(--danger); }
 
+        .btn-favorite:active { transform: scale(1.2); }
+
         .left-actions { display: flex; align-items: center; gap: 10px; }
 
         .add-report-btn {
@@ -1126,7 +1128,7 @@
                     </div>
                     <div class="card-body">
                         <h3 class="news-title" onclick="window.open('${news.url}', '_blank')">${news.title}</h3>
-                        <p class="news-summary">${stripHtml(news.summary || '')}</p>
+                        <p class="news-summary">${stripHtml(news.summary || news.description || news.snippet || 'No summary available.')}</p>
                         ${(news.insight && news.insight.trim() && news.insight.trim() !== 'Pending analysis') ? `
                         <div class="insight-section">
                             <div class="insight-header">💡 HTC Strategic Insight</div>
@@ -1136,11 +1138,7 @@
                         <div class="insight-section insight-pending">
                             <div class="insight-header">💡 HTC Strategic Insight</div>
                             <div class="insight-placeholder">
-                                <div class="skeleton-lines">
-                                    <span class="skeleton-line" style="width:60%;"></span>
-                                    <span class="skeleton-line" style="width:80%;"></span>
-                                </div>
-                                <span class="pending-label"><i class="fas fa-sync-alt refresh-analysis-icon" title="Refresh Analysis"></i> ${(news.insight && news.insight.trim() === 'Pending analysis') ? 'Pending analysis' : 'Analyzing...'}</span>
+                                <span style="font-size: 12px; color: #6c757d; font-style: italic;">Insight coming soon...</span>
                             </div>
                         </div>
                         `}
@@ -1155,8 +1153,8 @@
                                 <input type="checkbox" ${selectedForReport.has(news._id) ? 'checked' : ''} onchange="toggleNewsSelection('${news._id}')">
                                 <span class="checkbox-text">Add to report</span>
                             </label>
-                            <button class="btn-icon btn-favorite" onclick="toggleFavorite('${news._id}')" title="Favorites">
-                                <i class="fas ${favorites.includes(news._id) ? 'fa-heart' : 'fa-heart'}"></i>
+                            <button class="btn-favorite" onclick="toggleFavorite('${news._id}')" title="${news.isFavorite ? 'Remove from favorites' : 'Add to favorites'}" style="border: none; background: transparent; outline: none; box-shadow: none; cursor: pointer; font-size: 1.2rem; transition: transform 0.2s; padding: 0; ${news.isFavorite ? 'color: #e53e3e;' : 'color: #cbd5e0;'}">
+                                <i class="${news.isFavorite ? 'fas' : 'far'} fa-heart"></i>
                             </button>
                         </div>
                         <a href="${news.url}" target="_blank" class="read-more">
