@@ -12,8 +12,12 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
 const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
 
-// 混合关键词：中文 + 英文，扩大捕获面
-const KEYWORDS = ['China outbound', 'Chinese tourists', 'US visa', 'Hawaii tourism', '中美直航', '出境游趋势', '美国签证', '夏威夷旅游'];
+// 日期解析：失败时默认为当前日期，不丢弃
+function parseDate(dateString) {
+  if (!dateString) return new Date().toISOString().split('T')[0];
+  const d = new Date(dateString);
+  return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
+}
 
 // 动态时间窗口：仅接受当月和上个月的新闻
 function isRecentEnough(dateString) {
@@ -32,11 +36,11 @@ function isRecentEnough(dateString) {
   return false;
 }
 
-// 核心配置：精简信源；RSS 使用 when:60d 仅取近两月
+// 核心配置：精简信源；RSS 增加多样性（China travel, US tourism policy）+ when:60d
 const NEWS_SOURCES = [
   {
     name: 'Google News RSS (Global)',
-    searchUrl: 'https://news.google.com/rss/search?q=Hawaii+tourism+China+outbound+when:60d&hl=en-US&gl=US&ceid=US:en',
+    searchUrl: 'https://news.google.com/rss/search?q=China+travel+US+tourism+policy+Hawaii+tourism+China+outbound+when:60d&hl=en-US&gl=US&ceid=US:en',
     isRSS: true
   },
   {
@@ -52,6 +56,25 @@ const NEWS_SOURCES = [
     selectors: { articles: '.blog-post', title: 'h2 a', link: 'h2 a', summary: '.excerpt' }
   }
 ];
+
+// AI 守门员：仅标题判断是否与中国出境游/全球旅游趋势相关，返回 true/false
+async function isRelevantByAI(title) {
+  if (!DEEPSEEK_KEY) return true;
+  try {
+    const res = await axios.post(`${DEEPSEEK_BASE}/v1/chat/completions`, {
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: `Is this news related to China outbound travel or global tourism trends? Answer only YES or NO. Title: ${title}` }],
+      max_tokens: 10
+    }, {
+      headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
+      timeout: 10000
+    });
+    const raw = (res.data?.choices?.[0]?.message?.content || '').trim().toUpperCase();
+    return raw.startsWith('YES');
+  } catch (err) {
+    return true;
+  }
+}
 
 // AI 洞察 + 情感：DeepSeek 返回 sentiment（利好/中立/威胁）与 insight
 async function generateInsightAndSentiment(title, summary) {
@@ -98,13 +121,14 @@ async function crawlRSS(source) {
     const $ = cheerio.load(res.data, { xmlMode: true });
     const articles = [];
     $('item').each((i, el) => {
-      if (i < 10) {
+      if (i < 15) {
+        const pubDateText = $(el).find('pubDate').text();
         articles.push({
           title: $(el).find('title').text(),
           url: $(el).find('link').text(),
           summary: $(el).find('description').text().substring(0, 200),
           source: source.name,
-          date: new Date($(el).find('pubDate').text()).toISOString().split('T')[0]
+          date: parseDate(pubDateText)
         });
       }
     });
@@ -131,7 +155,7 @@ async function crawlWeb(source) {
           url: link.startsWith('http') ? link : (source.baseUrl || '') + link,
           summary: summary.substring(0, 300),
           source: source.name,
-          date: new Date().toISOString().split('T')[0]
+          date: parseDate(null)
         });
       }
     });
@@ -149,25 +173,33 @@ async function crawlAll() {
     allNews.push(...news);
   }
 
-  // 1. 过滤：关键词 + 动态时间窗口（仅当月和上个月）
-  const filtered = allNews.filter(n =>
-    KEYWORDS.some(kw => (n.title + n.summary).toLowerCase().includes(kw.toLowerCase())) && isRecentEnough(n.date)
-  );
+  // 1. 放松关键词：来自可信信源的先全保留，仅按动态时间窗口（当月+上个月）过滤
+  const filtered = allNews.filter(n => isRecentEnough(n.date));
 
-  console.log(`✅ Total articles after filtering (keyword + date): ${filtered.length}`);
+  console.log(`✅ Total articles (date filter only): ${filtered.length}`);
 
   const API_URL = process.env.API_URL || 'http://localhost:3000/api';
 
-  // 2. 为过滤后的新闻生成 AI 洞察与情感并推送
+  // 2. AI 守门员 + 洞察：相关则生成洞察，不相关或失败也强制入库（Pending analysis）
   for (const item of filtered) {
-    console.log(`🤖 Generating Insight + Sentiment for: ${item.title}`);
-    const { insight, sentiment } = await generateInsightAndSentiment(item.title, item.summary);
-    item.insight = insight;
-    item.sentiment = sentiment;
-    item.month = item.date ? item.date.substring(0, 7).replace('-', '年') + '月' : new Date().toISOString().slice(0, 7).replace('-', '年') + '月';
+    item.month = (item.date || '').substring(0, 7).replace('-', '年') + '月' || new Date().toISOString().slice(0, 7).replace('-', '年') + '月';
     item.categories = item.categories || ['Market Trend'];
 
-    // 3. 推送到 API / MongoDB
+    const relevant = await isRelevantByAI(item.title);
+    if (relevant) {
+      try {
+        const { insight, sentiment } = await generateInsightAndSentiment(item.title, item.summary);
+        item.insight = insight;
+        item.sentiment = sentiment || '中立';
+      } catch (e) {
+        item.insight = 'Pending analysis';
+        item.sentiment = '中立';
+      }
+    } else {
+      item.insight = 'Pending analysis';
+      item.sentiment = '中立';
+    }
+
     try {
       await axios.post(`${API_URL}/news`, item, { headers: { 'Content-Type': 'application/json' } });
       console.log('Successfully pushed to MongoDB:', item.title);
