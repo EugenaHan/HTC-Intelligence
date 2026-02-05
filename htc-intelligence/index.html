@@ -967,6 +967,12 @@
                 .replaceAll("'", '&#39;');
         }
 
+        function stripHtml(str) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = str || '';
+            return tmp.textContent || tmp.innerText || '';
+        }
+
         // 点选交互：勾选/取消时将新闻加入或移出 selectedNews（用 selectedForReport 存 id）
         function toggleNewsSelection(newsId) {
             generatedReportContent = '';
@@ -1120,7 +1126,7 @@
                     </div>
                     <div class="card-body">
                         <h3 class="news-title" onclick="window.open('${news.url}', '_blank')">${news.title}</h3>
-                        <p class="news-summary" data-summary="${(news.summary || '').replace(/"/g, '&quot;')}"></p>
+                        <p class="news-summary">${stripHtml(news.summary || '')}</p>
                         ${(news.insight && news.insight.trim() && news.insight.trim() !== 'Pending analysis') ? `
                         <div class="insight-section">
                             <div class="insight-header">💡 HTC Strategic Insight</div>
@@ -1160,32 +1166,8 @@
                 </div>
             `).join('');
 
-            // Set summary textContent to prevent HTML injection
-            newsGrid.querySelectorAll('.news-summary').forEach(p => {
-                const summary = p.getAttribute('data-summary');
-                if (summary) p.textContent = summary;
-            });
-
             // Update report (async when LLM is used for selected items)
             await updateReportContent(filtered);
-                    <div class="card-actions">
-                        <div class="left-actions">
-                            <label class="report-checkbox" title="Add to report">
-                                <input type="checkbox" ${selectedForReport.has(news._id) ? 'checked' : ''} onchange="toggleNewsSelection('${news._id}')">
-                                Add to report
-                            </label>
-                            <button class="favorite-btn ${favorites.includes(news._id) ? 'active' : ''}" 
-                                    onclick="toggleFavorite('${news._id}')"
-                                    title="Favorites">
-                                <i class="${favorites.includes(news._id) ? 'fas' : 'far'} fa-heart"></i>
-                            </button>
-                        </div>
-                        <a href="${news.url}" target="_blank" class="read-more">
-                            Read More <i class="fas fa-external-link-alt"></i>
-                        </a>
-                    </div>
-                </div>
-            `).join('');
         }
 
         // Helper functions
