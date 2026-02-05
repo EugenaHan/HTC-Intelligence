@@ -8,252 +8,250 @@
     <style>
         :root {
             --primary: #0066cc;
-            --bg-color: #f0f2f5;
-            --text-main: #1f2937;
-            --text-secondary: #6b7280;
+            --bg: #f3f4f6;
+            --text-main: #111827;
+            --text-sub: #4b5563;
         }
-
-        * { box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
             color: var(--text-main);
+            margin: 0;
+            padding-bottom: 50px;
         }
 
-        /* Header */
+        /* 1. 顶部导航 (修复登录显示) */
         header {
             background: white;
-            padding: 15px 40px;
+            padding: 0 40px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            z-index: 50;
         }
 
-        .brand { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
-        .brand i { font-size: 24px; }
+        .brand { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; gap: 10px; align-items: center; }
 
-        /* 主容器：左内容 + 右侧边栏 */
-        .container {
+        .user-area { display: flex; align-items: center; gap: 15px; }
+        .btn-login { background: var(--primary); color: white; padding: 8px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-logout { background: #fee2e2; color: #991b1b; padding: 6px 15px; border-radius: 6px; border: none; cursor: pointer; display: none; }
+
+        /* 2. 布局容器 (Grid + Sidebar) */
+        .layout {
             max-width: 1400px;
-            margin: 20px auto;
+            margin: 30px auto;
             display: grid;
-            grid-template-columns: 1fr 380px; /* 左侧自适应，右侧固定宽度 */
+            grid-template-columns: 1fr 350px;
             gap: 30px;
             padding: 0 20px;
         }
 
-        /* 筛选区 */
+        /* 3. 筛选栏 (修复 My Favorites) */
         .filters {
+            grid-column: 1 / -1;
             background: white;
             padding: 15px;
             border-radius: 12px;
-            margin-bottom: 20px;
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
             align-items: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-bottom: 10px;
         }
-
-        .filter-label { font-size: 12px; font-weight: bold; color: var(--text-secondary); margin-right: 10px; text-transform: uppercase; }
-
-        .btn-filter {
-            border: 1px solid #e5e7eb;
-            background: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: var(--text-secondary);
+        .filter-btn {
+            background: white; border: 1px solid #e5e7eb; padding: 6px 16px;
+            border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.2s;
         }
-        .btn-filter:hover { border-color: var(--primary); color: var(--primary); }
-        .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .filter-btn.fav-btn { border-color: #fca5a5; color: #b91c1c; }
+        .filter-btn.fav-btn.active { background: #ef4444; color: white; }
 
-        /* 新闻网格 (Grid) */
+        /* 4. 新闻卡片网格 (修复卡片高度和空白) */
         .news-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* 自适应列 */
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            align-items: stretch; /* 强制等高 */
         }
 
-        /* 新闻卡片 */
         .news-card {
             background: white;
             border-radius: 12px;
             padding: 20px;
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            flex-direction: column; /* 垂直布局 */
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: transform 0.2s;
-            border: 1px solid transparent;
             position: relative;
+            height: 100%; /* 撑满 Grid 单元格 */
         }
         .news-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
 
-        /* 卡片顶部：标签 + 收藏 */
-        .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
-        .tags { display: flex; gap: 6px; flex-wrap: wrap; }
-        .tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
-        .tag-green { background: #def7ec; color: #03543f; } /* 利好 */
-        .tag-red { background: #fde8e8; color: #9b1c1c; } /* 威胁 */
-        .tag-gray { background: #f3f4f6; color: #374151; } /* 中立 */
+        /* 卡片内部元素 */
+        .card-top { display: flex; justify-content: space-between; margin-bottom: 12px; }
+        .tags span { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; margin-right: 5px; }
+        .tag-green { background: #d1fae5; color: #065f46; }
+        .tag-red { background: #fee2e2; color: #991b1b; }
+        .tag-gray { background: #f3f4f6; color: #374151; }
 
-        .btn-fav { background: none; border: none; font-size: 18px; cursor: pointer; color: #d1d5db; transition: transform 0.2s; }
-        .btn-fav:active { transform: scale(1.2); }
-        .btn-fav.active { color: #ef4444; }
+        .btn-heart { background: none; border: none; color: #d1d5db; transition: 0.2s; cursor: pointer; }
+        .btn-heart:hover { transform: scale(1.2); }
+        .btn-heart.active { color: #ef4444; }
 
-        /* 卡片内容 */
-        .news-title { font-size: 16px; font-weight: 700; line-height: 1.4; margin: 0; color: #111827; }
+        .news-title { font-size: 16px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.4; color: #111827; }
 
+        /* 核心修复：Summary 显示 */
         .news-summary {
-            font-size: 13px;
-            color: #4b5563;
-            line-height: 1.6;
-            display: -webkit-box;
-            -webkit-line-clamp: 4; /* 最多显示4行 */
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin: 0;
+            font-size: 13px; color: #4b5563; line-height: 1.6; margin-bottom: 15px;
+            flex-grow: 1; /* 撑开中间，把 Insight 推到底部 */
         }
 
-        /* Insight 区域 */
+        /* 核心修复：Insight 样式 */
         .insight-box {
-            background: #eff6ff;
-            border-left: 3px solid #3b82f6;
-            padding: 10px 12px;
-            border-radius: 0 4px 4px 0;
-            margin-top: auto; /* 推到底部 */
+            background: #eff6ff; border-left: 3px solid #2563eb; padding: 12px; border-radius: 4px;
+            margin-top: auto; /* 绝对底部对齐 */
         }
-        .insight-header { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #2563eb; margin-bottom: 4px; }
-        .insight-content { font-size: 12px; color: #1e3a8a; line-height: 1.5; }
+        .insight-header { font-size: 11px; font-weight: 700; color: #1e40af; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+        .insight-text { font-size: 12px; color: #1e3a8a; line-height: 1.5; }
 
-        /* 卡片底部 */
-        .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #9ca3af; margin-top: 5px; padding-top: 10px; border-top: 1px solid #f3f4f6; }
-        .read-link { color: var(--primary); text-decoration: none; font-weight: 600; }
+        /* 5. 侧边栏 (Report) */
+        .sidebar { height: fit-content; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .btn-gen { width: 100%; background: var(--primary); color: white; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 10px; }
 
-        /* 右侧边栏 (Report) */
-        .sidebar { position: sticky; top: 90px; height: fit-content; }
-        .report-panel { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .report-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb; }
-        .report-title { font-size: 16px; font-weight: 700; }
-        .btn-generate { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
-        .btn-generate:hover { background-color: #0052a3; }
-        .report-content { font-family: monospace; font-size: 12px; background: #f8fafc; padding: 10px; border-radius: 6px; min-height: 100px; max-height: 500px; overflow-y: auto; color: #334155; white-space: pre-wrap; }
-
-        /* 响应式 */
-        @media (max-width: 1000px) {
-            .container { grid-template-columns: 1fr; }
-            .sidebar { display: none; } /* 移动端暂时隐藏侧边栏 */
+        /* 6. 登录弹窗 (Login Modal) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
         }
+        .login-box {
+            background: white; padding: 30px; border-radius: 12px; width: 300px; text-align: center;
+        }
+        .login-input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+
+        @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="brand">
-            <i class="fas fa-globe-asia"></i>
-            HTC Market Intelligence
+    <div class="modal-overlay" id="loginModal">
+        <div class="login-box">
+            <h2 style="margin-top:0">Sign In</h2>
+            <input type="text" id="username" class="login-input" placeholder="Username (admin)">
+            <input type="password" id="password" class="login-input" placeholder="Password (admin)">
+            <button class="btn-gen" onclick="handleLogin()">Login</button>
+            <p style="font-size:12px; color:red; display:none;" id="loginError">Invalid credentials</p>
         </div>
-        <div id="userInfo" style="font-size: 13px; font-weight: 600;">Guest</div>
+    </div>
+
+    <header>
+        <div class="brand"><i class="fas fa-globe-asia"></i> HTC Market Intelligence</div>
+        <div class="user-area">
+            <span id="welcomeMsg" style="font-size:13px; font-weight:600;">Guest</span>
+            <button class="btn-login" id="btnLogin" onclick="showLogin()">Login</button>
+            <button class="btn-logout" id="btnLogout" onclick="handleLogout()">Logout</button>
+        </div>
     </header>
 
-    <div class="container">
+    <div class="layout">
+        <div class="filters" id="filterBar">
+            <span style="font-size:12px; font-weight:700; color:#9ca3af; text-transform:uppercase;">View:</span>
+            <button class="filter-btn active" data-filter="all">All News</button>
+            <button class="filter-btn" data-filter="Short Haul">Short Haul</button>
+            <button class="filter-btn" data-filter="Long Haul">Long Haul</button>
+            <button class="filter-btn" data-filter="趋势">Trends</button>
+            <button class="filter-btn fav-btn" data-filter="favorites"><i class="fas fa-heart"></i> My Favorites</button>
+        </div>
 
-        <main>
-            <div class="filters" id="filterContainer">
-                <span class="filter-label">Segment:</span>
-                <button class="btn-filter active" data-filter="all">All</button>
-                <button class="btn-filter" data-filter="Short Haul">Short Haul</button>
-                <button class="btn-filter" data-filter="Long Haul">Long Haul</button>
-                <button class="btn-filter" data-filter="趋势">Trends</button>
-            </div>
-
-            <div id="newsGrid" class="news-grid">
-                <div style="text-align:center; padding: 40px; color: #9ca3af; grid-column: 1/-1;">
-                    <i class="fas fa-circle-notch fa-spin"></i> 正在连接全球情报中心...
-                </div>
-            </div>
-        </main>
+        <div class="news-grid" id="newsGrid">
+            <div style="grid-column:1/-1; text-align:center; padding:50px; color:#9ca3af;">Loading Intelligence...</div>
+        </div>
 
         <aside class="sidebar">
-            <div class="report-panel">
-                <div class="report-header">
-                    <i class="fas fa-file-invoice" style="color: var(--primary); font-size: 20px;"></i>
-                    <div class="report-title">Executive Summary</div>
+            <div class="report-card">
+                <h3 style="margin-top:0"><i class="fas fa-file-alt"></i> Executive Summary</h3>
+                <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">Based on current view</div>
+                <div id="reportPreview" style="font-family:monospace; font-size:11px; background:#f9fafb; padding:10px; border-radius:6px; min-height:100px; color:#374151;">
+                    Select news to preview impact analysis...
                 </div>
-                <div style="font-size: 12px; color: #6b7280; margin-bottom: 15px;">
-                    Select news items to generate a strategic report for HTB.
-                </div>
-                <button class="btn-generate" onclick="generateReport()">
-                    <i class="fas fa-magic"></i> Generate Report
-                </button>
-                <div id="reportOutput" class="report-content">Report preview will appear here...</div>
+                <button class="btn-gen" onclick="alert('Report Generation Triggered')">Generate Report</button>
             </div>
         </aside>
-
     </div>
 
     <script>
         let allNews = [];
+        let currentUser = JSON.parse(localStorage.getItem('htc_user'));
 
         document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
             loadNews();
         });
 
+        // --- 核心逻辑：加载新闻 ---
         async function loadNews() {
             try {
+                // 1. 获取新闻
                 const res = await fetch('/api/news');
                 const json = await res.json();
 
-                if (json.success && json.data.length > 0) {
-                    allNews = json.data;
+                // 2. 获取收藏 (如果已登录)
+                let favorites = [];
+                if (currentUser) {
+                    const favRes = await fetch(`/api/favorites?userId=${currentUser.uid}`);
+                    const favJson = await favRes.json();
+                    if (favJson.success) favorites = favJson.data.map(f => f.newsId); // 假设后端返回格式
+                }
+
+                if (json.success) {
+                    // 合并收藏状态
+                    allNews = json.data.map(item => ({
+                        ...item,
+                        isFavorite: favorites.includes(item._id) || item.isFavorite // 兼容两种返回格式
+                    }));
                     renderNews(allNews);
-                } else {
-                    document.getElementById('newsGrid').innerHTML = '<div style="text-align:center; padding:40px;">暂无数据，请检查爬虫状态。</div>';
                 }
             } catch (e) {
                 console.error(e);
-                document.getElementById('newsGrid').innerHTML = '<div style="text-align:center; padding:40px; color: #ef4444;">加载失败，请稍后重试。</div>';
+                document.getElementById('newsGrid').innerHTML = '<div style="text-align:center;">暂无数据 (API Connection Failed)</div>';
             }
         }
 
-        function renderNews(newsList) {
+        // --- 核心逻辑：渲染卡片 ---
+        function renderNews(list) {
             const grid = document.getElementById('newsGrid');
+            if (list.length === 0) {
+                grid.innerHTML = '<div style="text-align:center;">No news found for this category.</div>';
+                return;
+            }
 
-            grid.innerHTML = newsList.map(news => {
-                // 1. Summary 兜底
-                const summary = news.summary || news.description || news.snippet || '暂无详细摘要...';
+            grid.innerHTML = list.map(news => {
+                // Summary 兜底
+                const summary = news.summary || news.description || news.snippet || '暂无摘要内容...';
 
-                // 2. 标签颜色
+                // Sentiment 颜色
                 let tagClass = 'tag-gray';
                 if (news.sentiment === '利好') tagClass = 'tag-green';
                 if (news.sentiment === '威胁') tagClass = 'tag-red';
 
-                // 3. Insight 显示
+                // Insight 显示
                 let insightHTML = news.insight;
                 if (!insightHTML || insightHTML === 'Pending analysis') {
-                    insightHTML = '<span style="opacity:0.6; font-style:italic;">AI 正在分析... (点击生成)</span>';
+                    insightHTML = '<span style="font-style:italic; opacity:0.7;">Click to generate insight...</span>';
                 }
-
-                // 4. 收藏状态
-                const heartClass = news.isFavorite ? 'fas active' : 'far';
 
                 return `
                 <div class="news-card">
                     <div class="card-top">
                         <div class="tags">
-                            <span class="tag ${tagClass}">${news.sentiment || '中立'}</span>
-                            <span class="tag tag-gray">${news.source || 'News'}</span>
+                            <span class="${tagClass}">${news.sentiment || '中立'}</span>
+                            <span class="tag-gray">${news.source || 'News'}</span>
                         </div>
-                        <button class="btn-fav ${heartClass}" onclick="toggleFav(this, '${news._id}')">
+                        <button class="btn-heart ${news.isFavorite ? 'active' : ''}" onclick="toggleFav(this, '${news._id}')">
                             <i class="${news.isFavorite ? 'fas' : 'far'} fa-heart"></i>
                         </button>
                     </div>
@@ -263,56 +261,124 @@
 
                     <div class="insight-box">
                         <div class="insight-header"><i class="fas fa-lightbulb"></i> HTC Insight</div>
-                        <div class="insight-content">${insightHTML}</div>
+                        <div class="insight-text">${insightHTML}</div>
                     </div>
 
-                    <div class="card-meta">
+                    <div style="margin-top:10px; font-size:11px; color:#9ca3af; display:flex; justify-content:space-between;">
                         <span>${new Date(news.date).toLocaleDateString()}</span>
-                        <a href="${news.url}" target="_blank" class="read-link">Read Original <i class="fas fa-external-link-alt"></i></a>
+                        <a href="${news.url}" target="_blank" style="color:var(--primary); text-decoration:none;">Original Link &rarr;</a>
                     </div>
                 </div>
                 `;
             }).join('');
         }
 
-        // 简单的收藏交互
-        window.toggleFav = function(btn, id) {
-            btn.classList.toggle('active');
-            const icon = btn.querySelector('i');
-            if (btn.classList.contains('active')) {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-            } else {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-            }
-        };
-
-        // 简单的筛选交互
-        document.getElementById('filterContainer').addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-filter')) {
-                // 移除所有 active
-                document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+        // --- 交互：筛选 ---
+        document.getElementById('filterBar').addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-btn')) {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
 
                 const filter = e.target.dataset.filter;
                 if (filter === 'all') {
                     renderNews(allNews);
+                } else if (filter === 'favorites') {
+                    renderNews(allNews.filter(n => n.isFavorite));
                 } else {
-                    const filtered = allNews.filter(n =>
-                        (n.categories && n.categories.includes(filter)) ||
-                        (n.sentiment && n.sentiment.includes(filter))
-                    );
-                    renderNews(filtered);
+                    renderNews(allNews.filter(n => JSON.stringify(n).includes(filter))); // 模糊匹配
                 }
             }
         });
 
-        // 报告生成模拟
-        window.generateReport = function() {
-            const output = document.getElementById('reportOutput');
-            output.innerHTML = "Generating AI Report based on current news feed...\n\n(此处将调用 DeepSeek API 生成正式报告)";
+        // --- 交互：收藏 ---
+        window.toggleFav = async function(btn, id) {
+            if (!currentUser) { showLogin(); return; }
+
+            // UI Optimistic Update
+            btn.classList.toggle('active');
+            const icon = btn.querySelector('i');
+            icon.classList.toggle('fas');
+            icon.classList.toggle('far');
+
+            // Sync Data
+            const newsItem = allNews.find(n => n._id === id);
+            if (newsItem) newsItem.isFavorite = !newsItem.isFavorite;
+
+            // API Call
+            try {
+                const method = btn.classList.contains('active') ? 'POST' : 'DELETE';
+                await fetch('/api/favorites', {
+                    method: method,
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ userId: currentUser.uid, newsId: id })
+                });
+            } catch(e) { console.error(e); }
+        };
+
+        // --- 认证：登录/登出 ---
+        function checkAuth() {
+            if (currentUser) {
+                document.getElementById('welcomeMsg').textContent = `Hi, ${currentUser.name}`;
+                document.getElementById('btnLogin').style.display = 'none';
+                document.getElementById('btnLogout').style.display = 'block';
+            } else {
+                document.getElementById('welcomeMsg').textContent = 'Guest';
+                document.getElementById('btnLogin').style.display = 'block';
+                document.getElementById('btnLogout').style.display = 'none';
+            }
         }
+
+        function showLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+
+        window.handleLogin = async function() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+
+            // 简单模拟 (实际应调用 /api/login)
+            if (u === 'admin' && p === 'admin') {
+                currentUser = { uid: 'u_123', name: 'Admin' };
+                localStorage.setItem('htc_user', JSON.stringify(currentUser));
+                document.getElementById('loginModal').style.display = 'none';
+                checkAuth();
+                loadNews(); // Reload to get favorites
+            } else {
+                // 尝试调用 API
+                try {
+                    const res = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ username: u, password: p })
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        currentUser = json.user;
+                        localStorage.setItem('htc_user', JSON.stringify(currentUser));
+                        document.getElementById('loginModal').style.display = 'none';
+                        checkAuth();
+                        loadNews();
+                    } else {
+                        document.getElementById('loginError').style.display = 'block';
+                    }
+                } catch(e) {
+                    document.getElementById('loginError').innerText = "Login API Error";
+                    document.getElementById('loginError').style.display = 'block';
+                }
+            }
+        };
+
+        window.handleLogout = function() {
+            localStorage.removeItem('htc_user');
+            currentUser = null;
+            checkAuth();
+            loadNews(); // Clear favorites view
+        };
+
+        // Close modal on outside click
+        document.getElementById('loginModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('loginModal')) {
+                document.getElementById('loginModal').style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
