@@ -647,11 +647,468 @@
     <script>
         const API_URL = '/api';
         const USER_STORAGE_KEY = 'htc_user';
-
-        // State
-        let currentUser = null;
+        let allNews = [];
+        let currentUser = JSON.parse(localStorage.getItem('htc_user')) || { uid: 'guest', name: 'Guest' };
         let currentSegment = 'all';
-        let newsData = [];
+        let showFavoritesOnly = false;
+        let selectedForReport = new Set();
+
+        // ============================================
+        // 1. 初始化
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNews();
+            setupEventListeners();
+            updateUserUI();
+        });
+
+        // ============================================
+        // 2. 加载新闻数据
+        // ============================================
+        async function loadNews() {
+            try {
+                const res = await fetch(`${API_URL}/news`);
+                const data = await res.json();
+
+                if (data.success) {
+                    allNews = data.data;
+                    renderNews(allNews);
+                } else {
+                    console.error('API Error:', data.message);
+                    document.getElementById('newsGrid').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <h3>Failed to load news</h3>
+                            <p>${data.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error('Fetch Error:', err);
+                document.getElementById('newsGrid').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3>Network Error</h3>
+                        <p>Please check your connection and try again.</p>
+                        <button class="btn btn-primary" onclick="loadNews()" style="margin-top: 15px;">
+                            <i class="fas fa-sync"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // ============================================
+        // 3. 渲染新闻卡片 (核心修复)
+        // ============================================
+        function renderNews(newsList) {
+            const grid = document.getElementById('newsGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (!newsList || newsList.length === 0) {
+                grid.innerHTML = '';
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            // 筛选
+            let filtered = newsList.filter(n => {
+                const t = (n.title || '').toLowerCase();
+                return !t.includes('测试') && !t.includes('test news');
+            });
+
+            if (currentSegment !== 'all') {
+                filtered = filtered.filter(n => (n.categories || []).includes(currentSegment));
+            }
+
+            if (showFavoritesOnly) {
+                filtered = filtered.filter(n => n.isFavorite);
+            }
+
+            // 排序
+            filtered = [...filtered].sort((a, b) => {
+                const dateA = new Date(a.date || 0).getTime();
+                const dateB = new Date(b.date || 0).getTime();
+                return dateB - dateA;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            grid.innerHTML = filtered.map(news => {
+                // Fix 1: Summary fallback
+                const summaryText = stripHtml(news.summary || news.description || news.snippet || 'No summary available.');
+
+                // Fix 2: Insight display
+                let insightHTML = '';
+                if (news.insight && news.insight.trim() && news.insight !== 'Pending analysis') {
+                    insightHTML = `
+                        <div class="insight-text">${news.insight.trim()}</div>
+                    `;
+                } else {
+                    insightHTML = `
+                        <div class="insight-pending">
+                            <span style="font-size: 12px; color: #6c757d; font-style: italic;">💡 Insight coming soon...</span>
+                        </div>
+                    `;
+                }
+
+                // Fix 3: Favorites with proper icon
+                const isFav = news.isFavorite ? 'fas' : 'far';
+                const heartColor = news.isFavorite ? '#e53e3e' : '#cbd5e0';
+
+                // Categories
+                const categoriesHTML = (news.categories || []).map(cat => {
+                    const tagClass = getCategoryClass(cat);
+                    return `<span class="category-tag ${tagClass}">${cat}</span>`;
+                }).join('');
+
+                // Sentiment
+                const sentimentClass = getSentimentClass(news.sentiment);
+                const sentimentIcon = getSentimentIcon(news.sentiment);
+
+                return `
+                <div class="news-card" data-id="${news._id}">
+                    <div class="card-header">
+                        <div class="card-categories">
+                            ${categoriesHTML}
+                            <span class="sentiment-badge ${sentimentClass}">
+                                <i class="fas ${sentimentIcon}"></i>
+                                ${news.sentiment || '中立'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <h3 class="news-title" onclick="window.open('${news.url}', '_blank')">${news.title}</h3>
+                        <p class="news-summary">${summaryText}</p>
+
+                        <div class="insight-section">
+                            <div class="insight-header">💡 HTC Strategic Insight</div>
+                            ${insightHTML}
+                        </div>
+
+                        <div class="news-meta">
+                            <span class="meta-item"><i class="far fa-calendar"></i> ${news.date || 'Today'}</span>
+                            <span class="meta-item"><i class="far fa-newspaper"></i> ${news.source || 'Unknown'}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-actions">
+                        <div class="left-actions">
+                            <label class="report-checkbox" title="Add to report">
+                                <input type="checkbox" ${selectedForReport.has(news._id) ? 'checked' : ''} onchange="toggleNewsSelection('${news._id}')">
+                                <span class="checkbox-text">Add to report</span>
+                            </label>
+                            <button class="btn-favorite" data-id="${news._id}" title="${news.isFavorite ? 'Remove from favorites' : 'Add to favorites'}" style="border: none; background: transparent; outline: none; box-shadow: none; cursor: pointer; font-size: 1.2rem; transition: transform 0.2s; padding: 0; color: ${heartColor};">
+                                <i class="${isFav} fa-heart"></i>
+                            </button>
+                        </div>
+                        <a href="${news.url}" target="_blank" class="read-more">
+                            Read More <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================
+        // 4. Event Delegation for Favorites (核心修复)
+        // ============================================
+        document.getElementById('newsGrid').addEventListener('click', async (e) => {
+            // Handle favorite button clicks
+            const favBtn = e.target.closest('.btn-favorite');
+            if (favBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                await toggleFavorite(favBtn);
+                return;
+            }
+        });
+
+        async function toggleFavorite(btn) {
+            const newsId = btn.getAttribute('data-id');
+            const icon = btn.querySelector('i');
+            const isCurrentlyFav = icon.classList.contains('fas');
+
+            // Optimistic UI: 立即更新视觉
+            if (isCurrentlyFav) {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                btn.style.color = '#cbd5e0';
+            } else {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.style.color = '#e53e3e';
+            }
+
+            // 调用 API
+            try {
+                const method = isCurrentlyFav ? 'DELETE' : 'POST';
+                const res = await fetch(`${API_URL}/favorites`, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: currentUser.uid, newsId })
+                });
+
+                const result = await res.json();
+
+                if (!result.success) {
+                    // 如果失败,回滚UI
+                    if (isCurrentlyFav) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        btn.style.color = '#e53e3e';
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        btn.style.color = '#cbd5e0';
+                    }
+                    console.error('Favorite toggle failed:', result.message);
+                }
+            } catch (err) {
+                // 如果失败,回滚UI
+                if (isCurrentlyFav) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                    btn.style.color = '#e53e3e';
+                } else {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                    btn.style.color = '#cbd5e0';
+                }
+                console.error('Favorite toggle error:', err);
+            }
+        }
+
+        // ============================================
+        // 5. 筛选功能
+        // ============================================
+        function setupEventListeners() {
+            // Segment filters
+            document.getElementById('segmentFilters').addEventListener('click', (e) => {
+                if (e.target.classList.contains('filter-btn')) {
+                    document.querySelectorAll('#segmentFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentSegment = e.target.dataset.segment;
+                    renderNews(allNews);
+                }
+            });
+
+            // Show favorites
+            document.getElementById('showFavoritesBtn').addEventListener('click', (e) => {
+                showFavoritesOnly = !showFavoritesOnly;
+                e.target.classList.toggle('active');
+                renderNews(allNews);
+            });
+
+            // Generate report
+            document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+            document.getElementById('copyReportBtn').addEventListener('click', copyReport);
+        }
+
+        // ============================================
+        // 6. 报告生成
+        // ============================================
+        function toggleNewsSelection(newsId) {
+            if (selectedForReport.has(newsId)) {
+                selectedForReport.delete(newsId);
+            } else {
+                selectedForReport.add(newsId);
+            }
+        }
+
+        async function generateReport() {
+            const btn = document.getElementById('generateReportBtn');
+            const reportContent = document.getElementById('reportContent');
+
+            const selected = Array.from(selectedForReport);
+            if (selected.length === 0) {
+                alert('Please select at least one news item to generate a report.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            try {
+                const selectedNews = allNews.filter(n => selected.has(n._id));
+                const reportText = selectedNews.map(n => `• ${n.title}\n  ${n.summary || n.description || ''}\n  ${n.insight || ''}`).join('\n\n');
+
+                // Call AI API for report generation
+                const res = await fetch(`${API_URL}/generate-report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        newsItems: selectedNews.map(n => ({
+                            title: n.title,
+                            summary: n.summary || n.description || '',
+                            url: n.url,
+                            date: n.date,
+                            source: n.source
+                        }))
+                    })
+                });
+
+                const result = await res.json();
+
+                if (result.success && result.data) {
+                    reportContent.innerHTML = (typeof marked !== 'undefined' ? marked.parse(result.data) : escapeHtml(result.data).replace(/\n/g, '<br>'));
+                    reportContent.classList.add('report-markdown');
+                } else {
+                    reportContent.textContent = result.message || 'Failed to generate report';
+                }
+            } catch (err) {
+                console.error('Report generation failed:', err);
+                reportContent.textContent = 'Network error. Please try again.';
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-alt"></i> Generate Report';
+        }
+
+        function copyReport() {
+            const text = document.getElementById('reportContent').innerText || document.getElementById('reportContent').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Report copied to clipboard!');
+            });
+        }
+
+        // ============================================
+        // 7. 用户认证
+        // ============================================
+        function updateUserUI() {
+            const userSection = document.getElementById('userSection');
+            if (currentUser && currentUser.uid !== 'guest') {
+                userSection.innerHTML = `
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span>${currentUser.name || 'User'}</span>
+                        <button class="btn-logout" onclick="handleLogout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                userSection.innerHTML = `
+                    <button class="btn btn-outline btn-signin" onclick="openModal()">
+                        <i class="fas fa-user"></i> Sign In
+                    </button>
+                `;
+            }
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                alert('Please enter username and password');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await res.json();
+
+                if (result.success && result.data) {
+                    currentUser = result.data;
+                    localStorage.setItem('htc_user', JSON.stringify(currentUser));
+                    closeModal();
+                    updateUserUI();
+                    loadNews();
+                } else {
+                    alert(result.message || 'Login failed');
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                alert('Network error. Please try again.');
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('htc_user');
+            updateUserUI();
+            loadNews();
+        }
+
+        function openModal() {
+            document.getElementById('loginModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('loginModal').classList.remove('active');
+        }
+
+        // ============================================
+        // 8. 辅助函数
+        // ============================================
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function stripHtml(str) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = str || '';
+            return tmp.textContent || tmp.innerText || '';
+        }
+
+        function getCategoryClass(category) {
+            const map = {
+                '中国出境游趋势': 'tag-outbound',
+                '中国消费趋势': 'tag-consumption',
+                '中国经济趋势': 'tag-economy',
+                'Short Haul': 'tag-short',
+                'Long Haul': 'tag-long',
+                'Northeast Asia': 'tag-short',
+                'Southeast Asia': 'tag-short',
+                'Oceania': 'tag-long',
+                'Middle East': 'tag-long',
+                'Visa Policy': 'tag-visa',
+                'Flight Routes': 'tag-flight',
+                'Market Data': 'tag-market',
+                'Market Trend': 'tag-market'
+            };
+            return map[category] || 'tag-market';
+        }
+
+        function getSentimentClass(sentiment) {
+            const map = { '利好': 'sentiment-positive', '威胁': 'sentiment-negative', '中立': 'sentiment-neutral' };
+            return map[sentiment] || 'sentiment-neutral';
+        }
+
+        function getSentimentIcon(sentiment) {
+            const map = { '利好': 'fa-arrow-trend-up', '威胁': 'fa-arrow-trend-down', '中立': 'fa-minus' };
+            return map[sentiment] || 'fa-minus';
+        }
+
+        function parseDateSafe(value) {
+            if (!value) return 0;
+            // 兼容 "YYYY-MM-DD" / ISO / 其他可被 Date 解析的格式；解析失败时返回 0
+            const t = Date.parse(value);
+            return Number.isFinite(t) ? t : 0;
+        }
+    </script>
         let favorites = [];
         let showFavoritesOnly = false;
         // 状态：用户勾选用于报告的新闻（存 _id），等价于 selectedNews 的 ID 集合
