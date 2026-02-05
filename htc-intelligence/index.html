@@ -194,15 +194,15 @@
         /* Main Layout */
         .main-layout { display: grid; grid-template-columns: 1fr 420px; gap: 20px; }
 
-        /* News Grid: robust responsive grid to prevent empty white blocks */
+        /* News Grid: strict grid, no masonry/columns — prevents misalignment and empty gaps */
         .news-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 15px;
-            align-items: stretch;
+            gap: 20px;
+            align-items: start;
         }
 
-        /* News Card: consistent height structure, flex column */
+        /* News Card: consistent vertical structure, flex column */
         .news-card {
             background: white;
             border-radius: var(--radius);
@@ -277,7 +277,7 @@
 
         .news-summary { font-size: 12px; color: var(--gray); line-height: 1.5; margin-bottom: 10px; flex-shrink: 0; }
 
-        /* HTC Strategic Insight: pro-note style */
+        /* HTC Strategic Insight: fixed min-height so cards don't jump */
         .insight-section {
             margin: 10px 0;
             padding: 12px 14px;
@@ -285,8 +285,8 @@
             background: #e8f4fc;
             border: 1px solid #b6d4fe;
             border-left: 4px solid #0d6efd;
+            min-height: 80px;
             flex: 1 1 auto;
-            min-height: 0;
         }
         .insight-section .insight-header {
             display: flex;
@@ -307,6 +307,36 @@
             color: #6c757d;
             font-style: italic;
         }
+        /* Pending / Analyzing: skeleton + refresh icon */
+        .insight-section.insight-pending .insight-placeholder {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .insight-section.insight-pending .skeleton-lines { display: flex; flex-direction: column; gap: 6px; }
+        .insight-section.insight-pending .skeleton-line {
+            height: 10px;
+            background: linear-gradient(90deg, #dee2e6 25%, #e9ecef 50%, #dee2e6 75%);
+            background-size: 200% 100%;
+            animation: skeleton 1.2s ease-in-out infinite;
+            border-radius: 4px;
+        }
+        @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .insight-section.insight-pending .pending-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        .insight-section.insight-pending .refresh-analysis-icon {
+            color: #0d6efd;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        .insight-section.insight-pending .refresh-analysis-icon:hover { opacity: 1; }
 
         .news-meta { display: flex; gap: 10px; font-size: 11px; color: var(--gray); flex-shrink: 0; }
 
@@ -372,13 +402,17 @@
 
         .read-more:hover { text-decoration: underline; }
 
-        /* Report Panel */
+        /* Report Panel: sticky so Executive Summary stays visible on scroll */
         .report-panel {
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(10px);
             border-radius: var(--radius);
-            padding: 20px; box-shadow: var(--shadow-lg);
-            height: fit-content; position: sticky; top: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+            align-self: start;
         }
 
         .report-header {
@@ -999,7 +1033,10 @@
 
         // Render news
         async function renderNews() {
-            let filtered = newsData.filter(n => !(n.title && n.title.includes('测试')));
+            let filtered = newsData.filter(n => {
+                const t = (n.title || '').toLowerCase();
+                return !t.includes('测试') && !t.includes('test news');
+            });
             
             if (currentSegment !== 'all') {
                 filtered = filtered.filter(n => n.categories.includes(currentSegment));
@@ -1041,15 +1078,21 @@
                     <div class="card-body">
                         <h3 class="news-title" onclick="window.open('${news.url}', '_blank')">${news.title}</h3>
                         <p class="news-summary">${news.summary}</p>
-                        ${(news.insight && news.insight.trim()) ? `
+                        ${(news.insight && news.insight.trim() && news.insight.trim() !== 'Pending analysis') ? `
                         <div class="insight-section">
                             <div class="insight-header">💡 HTC Strategic Insight</div>
                             <div class="insight-text">${news.insight.trim()}</div>
                         </div>
                         ` : `
-                        <div class="insight-section">
+                        <div class="insight-section insight-pending">
                             <div class="insight-header">💡 HTC Strategic Insight</div>
-                            <div class="insight-placeholder">Analyzing...</div>
+                            <div class="insight-placeholder">
+                                <div class="skeleton-lines">
+                                    <span class="skeleton-line" style="width:60%;"></span>
+                                    <span class="skeleton-line" style="width:80%;"></span>
+                                </div>
+                                <span class="pending-label"><i class="fas fa-sync-alt refresh-analysis-icon" title="Refresh Analysis"></i> ${(news.insight && news.insight.trim() === 'Pending analysis') ? 'Pending analysis' : 'Analyzing...'}</span>
+                            </div>
                         </div>
                         `}
                         <div class="news-meta">
