@@ -1104,9 +1104,9 @@
             
             newsGrid.style.display = 'grid';
             emptyState.style.display = 'none';
-            
+
             newsGrid.innerHTML = filtered.map(news => `
-                <div class="news-card">
+                <div class="news-card" data-id="${news._id}">
                     <div class="card-header">
                         <div class="card-categories">
                             ${(news.categories || []).map(cat => `
@@ -1120,7 +1120,7 @@
                     </div>
                     <div class="card-body">
                         <h3 class="news-title" onclick="window.open('${news.url}', '_blank')">${news.title}</h3>
-                        <p class="news-summary">${news.summary}</p>
+                        <p class="news-summary" data-summary="${(news.summary || '').replace(/"/g, '&quot;')}"></p>
                         ${(news.insight && news.insight.trim() && news.insight.trim() !== 'Pending analysis') ? `
                         <div class="insight-section">
                             <div class="insight-header">💡 HTC Strategic Insight</div>
@@ -1143,6 +1143,31 @@
                             <span class="meta-item"><i class="far fa-newspaper"></i> ${news.source}</span>
                         </div>
                     </div>
+                    <div class="card-actions">
+                        <div class="left-actions">
+                            <label class="report-checkbox" title="Add to report">
+                                <input type="checkbox" ${selectedForReport.has(news._id) ? 'checked' : ''} onchange="toggleNewsSelection('${news._id}')">
+                                <span class="checkbox-text">Add to report</span>
+                            </label>
+                            <button class="btn-icon btn-favorite" onclick="toggleFavorite('${news._id}')" title="Favorites">
+                                <i class="fas ${favorites.includes(news._id) ? 'fa-heart' : 'fa-heart'}"></i>
+                            </button>
+                        </div>
+                        <a href="${news.url}" target="_blank" class="read-more">
+                            Read More <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            // Set summary textContent to prevent HTML injection
+            newsGrid.querySelectorAll('.news-summary').forEach(p => {
+                const summary = p.getAttribute('data-summary');
+                if (summary) p.textContent = summary;
+            });
+
+            // Update report (async when LLM is used for selected items)
+            await updateReportContent(filtered);
                     <div class="card-actions">
                         <div class="left-actions">
                             <label class="report-checkbox" title="Add to report">
