@@ -194,30 +194,46 @@
         /* Main Layout */
         .main-layout { display: grid; grid-template-columns: 1fr 420px; gap: 20px; }
 
-        /* News Grid */
-        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
+        /* News Grid: robust responsive grid to prevent empty white blocks */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+            align-items: stretch;
+        }
 
-        /* News Card */
+        /* News Card: consistent height structure, flex column */
         .news-card {
-            background: white; border-radius: var(--radius);
-            box-shadow: var(--shadow); overflow: hidden;
-            transition: all 0.3s ease; display: flex;
-            flex-direction: column; position: relative;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-height: 0;
         }
 
         .news-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 
         .card-header {
             padding: 15px 15px 10px;
-            display: flex; justify-content: space-between;
-            align-items: flex-start; gap: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            flex-shrink: 0;
         }
 
-        .card-categories { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+        .card-categories { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; align-items: center; }
 
         .category-tag {
-            padding: 3px 8px; border-radius: 10px;
-            font-size: 10px; font-weight: 600; text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
         .tag-outbound { background: #f3e5f5; color: #7b1fa2; }
@@ -229,7 +245,7 @@
         .tag-flight { background: #e0f7fa; color: #00838f; }
         .tag-market { background: #e8eaf6; color: #3f51b5; }
 
-        /* Sentiment: read-only tag from DB (AI-determined), Green 利好 / Gray 中立 / Red 威胁 */
+        /* Sentiment: compact badges consistent with category tags */
         .sentiment-badge {
             padding: 3px 8px;
             border-radius: 10px;
@@ -239,11 +255,17 @@
             align-items: center;
             gap: 3px;
         }
-        .sentiment-positive { background: #d4edda; color: #155724; }
-        .sentiment-neutral { background: #e2e3e5; color: #383d41; }
-        .sentiment-negative { background: #f8d7da; color: #721c24; }
+        .sentiment-positive { background: #e6fffa; color: #285e61; }
+        .sentiment-neutral { background: #f7fafc; color: #2d3748; }
+        .sentiment-negative { background: #fff5f5; color: #822727; }
 
-        .card-body { padding: 0 15px 10px; flex: 1; }
+        .card-body {
+            padding: 0 15px 10px;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
 
         .news-title {
             font-size: 14px; font-weight: 600;
@@ -253,15 +275,18 @@
 
         .news-title:hover { color: var(--primary); }
 
-        .news-summary { font-size: 12px; color: var(--gray); line-height: 1.5; margin-bottom: 10px; }
+        .news-summary { font-size: 12px; color: var(--gray); line-height: 1.5; margin-bottom: 10px; flex-shrink: 0; }
 
-        /* HTC Strategic Insight section */
+        /* HTC Strategic Insight: pro-note style */
         .insight-section {
             margin: 10px 0;
-            padding: 10px 12px;
+            padding: 12px 14px;
             border-radius: 8px;
             background: #e8f4fc;
-            border-left: 3px solid #0d6efd;
+            border: 1px solid #b6d4fe;
+            border-left: 4px solid #0d6efd;
+            flex: 1 1 auto;
+            min-height: 0;
         }
         .insight-section .insight-header {
             display: flex;
@@ -283,11 +308,12 @@
             font-style: italic;
         }
 
-        .news-meta { display: flex; gap: 10px; font-size: 11px; color: var(--gray); }
+        .news-meta { display: flex; gap: 10px; font-size: 11px; color: var(--gray); flex-shrink: 0; }
 
         .meta-item { display: flex; align-items: center; gap: 4px; }
 
         .card-actions {
+            flex-shrink: 0;
             padding: 10px 15px; background: #f8f9fa;
             border-top: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center;
@@ -973,7 +999,7 @@
 
         // Render news
         async function renderNews() {
-            let filtered = newsData;
+            let filtered = newsData.filter(n => !(n.title && n.title.includes('测试')));
             
             if (currentSegment !== 'all') {
                 filtered = filtered.filter(n => n.categories.includes(currentSegment));
