@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,377 +8,373 @@
     <style>
         :root {
             --primary: #0066cc;
-            --bg: #f3f4f6;
-            --text-main: #111827;
-            --text-sub: #4b5563;
+            --bg: #f0f2f5;
+            --text: #1f2937;
         }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
 
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding-bottom: 50px;
-        }
-
-        /* 1. 顶部导航 (修复登录显示) */
+        /* 1. Header */
         header {
-            background: white;
-            padding: 0 40px;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 50;
+            background: white; height: 64px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+        .logo { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .user-btn { padding: 6px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-login { background: var(--primary); color: white; }
 
-        .brand { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; gap: 10px; align-items: center; }
-
-        .user-area { display: flex; align-items: center; gap: 15px; }
-        .btn-login { background: var(--primary); color: white; padding: 8px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
-        .btn-logout { background: #fee2e2; color: #991b1b; padding: 6px 15px; border-radius: 6px; border: none; cursor: pointer; display: none; }
-
-        /* 2. 布局容器 (Grid + Sidebar) */
+        /* 2. Layout */
         .layout {
-            max-width: 1400px;
-            margin: 30px auto;
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 30px;
-            padding: 0 20px;
+            max-width: 1400px; margin: 24px auto; padding: 0 20px;
+            display: grid; grid-template-columns: 1fr 380px; gap: 24px;
         }
 
-        /* 3. 筛选栏 (修复 My Favorites) */
+        /* 3. Filters */
         .filters {
-            grid-column: 1 / -1;
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            margin-bottom: 10px;
+            grid-column: 1 / -1; background: white; padding: 16px; border-radius: 12px;
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
         }
-        .filter-btn {
-            background: white; border: 1px solid #e5e7eb; padding: 6px 16px;
-            border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+        .pill {
+            border: 1px solid #e5e7eb; background: white; padding: 6px 16px; border-radius: 20px;
+            font-size: 13px; font-weight: 500; color: #4b5563; cursor: pointer; transition: 0.2s;
         }
-        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .filter-btn.fav-btn { border-color: #fca5a5; color: #b91c1c; }
-        .filter-btn.fav-btn.active { background: #ef4444; color: white; }
+        .pill:hover { border-color: var(--primary); color: var(--primary); }
+        .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .pill.fav { color: #dc2626; border-color: #fecaca; }
+        .pill.fav.active { background: #dc2626; color: white; }
 
-        /* 4. 新闻卡片网格 (修复卡片高度和空白) */
-        .news-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            align-items: stretch; /* 强制等高 */
+        /* 4. News Grid */
+        .news-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+        .card {
+            background: white; border-radius: 12px; padding: 20px;
+            display: flex; flex-direction: column; gap: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.2s;
+            position: relative; border: 1px solid transparent;
         }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+        .card.selected { border: 2px solid var(--primary); background: #f0f9ff; }
 
-        .news-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column; /* 垂直布局 */
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-            position: relative;
-            height: 100%; /* 撑满 Grid 单元格 */
-        }
-        .news-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+        /* Card Tags */
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+        .badge.trend { background: #eff6ff; color: #1e40af; }
+        .badge.pos { background: #def7ec; color: #03543f; }
+        .badge.neg { background: #fde8e8; color: #9b1c1c; }
+        .badge.neu { background: #f3f4f6; color: #374151; }
 
-        /* 卡片内部元素 */
-        .card-top { display: flex; justify-content: space-between; margin-bottom: 12px; }
-        .tags span { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; margin-right: 5px; }
-        .tag-green { background: #d1fae5; color: #065f46; }
-        .tag-red { background: #fee2e2; color: #991b1b; }
-        .tag-gray { background: #f3f4f6; color: #374151; }
-
-        .btn-heart { background: none; border: none; color: #d1d5db; transition: 0.2s; cursor: pointer; }
-        .btn-heart:hover { transform: scale(1.2); }
-        .btn-heart.active { color: #ef4444; }
-
-        .news-title { font-size: 16px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.4; color: #111827; }
-
-        /* 核心修复：Summary 显示 */
-        .news-summary {
-            font-size: 13px; color: #4b5563; line-height: 1.6; margin-bottom: 15px;
-            flex-grow: 1; /* 撑开中间，把 Insight 推到底部 */
+        /* Content */
+        .card-title { font-size: 16px; font-weight: 700; line-height: 1.4; margin: 0; color: #111827; }
+        .card-summary {
+            font-size: 13px; color: #4b5563; line-height: 1.6; margin: 0;
+            display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
         }
 
-        /* 核心修复：Insight 样式 */
-        .insight-box {
-            background: #eff6ff; border-left: 3px solid #2563eb; padding: 12px; border-radius: 4px;
-            margin-top: auto; /* 绝对底部对齐 */
-        }
-        .insight-header { font-size: 11px; font-weight: 700; color: #1e40af; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
-        .insight-text { font-size: 12px; color: #1e3a8a; line-height: 1.5; }
+        /* Insight Box */
+        .insight { background: #f8fafc; border-left: 3px solid #3b82f6; padding: 10px; border-radius: 0 4px 4px 0; margin-top: auto; }
+        .insight h4 { font-size: 11px; margin: 0 0 4px 0; color: #2563eb; display: flex; align-items: center; gap: 6px; }
+        .insight p { font-size: 12px; margin: 0; color: #334155; line-height: 1.4; }
 
-        /* 5. 侧边栏 (Report) */
-        .sidebar { height: fit-content; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .btn-gen { width: 100%; background: var(--primary); color: white; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 10px; }
-
-        /* 6. 登录弹窗 (Login Modal) */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
+        /* Action Bar (Checkbox + Fav) */
+        .action-bar {
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid #f3f4f6;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .login-box {
-            background: white; padding: 30px; border-radius: 12px; width: 300px; text-align: center;
-        }
-        .login-input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .check-group { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer; }
+        .check-group input { width: 16px; height: 16px; cursor: pointer; }
 
-        @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+        .btn-fav { background: none; border: none; font-size: 18px; cursor: pointer; color: #d1d5db; transition: 0.2s; }
+        .btn-fav:hover { transform: scale(1.2); }
+        .btn-fav.active { color: #ef4444; }
+
+        /* 5. Sidebar */
+        .sidebar { position: sticky; top: 100px; height: fit-content; }
+        .panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .gen-btn {
+            width: 100%; background: var(--primary); color: white; border: none; padding: 12px;
+            border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 15px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .gen-btn:hover { background: #0052a3; }
+
+        /* Mobile */
+        @media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+        /* Login Modal */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center; }
+        .modal-box { background:white; padding:30px; border-radius:12px; width:300px; text-align:center; }
+        .inp { width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; }
     </style>
 </head>
 <body>
 
-    <div class="modal-overlay" id="loginModal">
-        <div class="login-box">
-            <h2 style="margin-top:0">Sign In</h2>
-            <input type="text" id="username" class="login-input" placeholder="Username (admin)">
-            <input type="password" id="password" class="login-input" placeholder="Password (admin)">
-            <button class="btn-gen" onclick="handleLogin()">Login</button>
-            <p style="font-size:12px; color:red; display:none;" id="loginError">Invalid credentials</p>
+    <div class="modal" id="loginModal">
+        <div class="modal-box">
+            <h3>Login</h3>
+            <input type="text" id="u" class="inp" placeholder="Username">
+            <input type="password" id="p" class="inp" placeholder="Password">
+            <button class="user-btn btn-login" style="width:100%" onclick="doLogin()">Sign In</button>
         </div>
     </div>
 
     <header>
-        <div class="brand"><i class="fas fa-globe-asia"></i> HTC Market Intelligence</div>
-        <div class="user-area">
-            <span id="welcomeMsg" style="font-size:13px; font-weight:600;">Guest</span>
-            <button class="btn-login" id="btnLogin" onclick="showLogin()">Login</button>
-            <button class="btn-logout" id="btnLogout" onclick="handleLogout()">Logout</button>
+        <div class="logo"><i class="fas fa-chart-pie"></i> HTC Market Intelligence</div>
+        <div id="userArea">
+            <button class="user-btn btn-login" onclick="document.getElementById('loginModal').style.display='flex'">Login</button>
         </div>
     </header>
 
     <div class="layout">
-        <div class="filters" id="filterBar">
-            <span style="font-size:12px; font-weight:700; color:#9ca3af; text-transform:uppercase;">View:</span>
-            <button class="filter-btn active" data-filter="all">All News</button>
-            <button class="filter-btn" data-filter="Short Haul">Short Haul</button>
-            <button class="filter-btn" data-filter="Long Haul">Long Haul</button>
-            <button class="filter-btn" data-filter="趋势">Trends</button>
-            <button class="filter-btn fav-btn" data-filter="favorites"><i class="fas fa-heart"></i> My Favorites</button>
+        <div class="filters" id="filters">
+            <div style="font-size:12px; font-weight:700; color:#9ca3af; margin-right:10px;">MARKET SEGMENT:</div>
+            <button class="pill active" data-f="all">All</button>
+            <button class="pill" data-f="出境游趋势">Outbound Trend</button>
+            <button class="pill" data-f="消费趋势">Consumption</button>
+            <button class="pill" data-f="Short Haul">Short Haul</button>
+            <button class="pill" data-f="Long Haul">Long Haul</button>
+            <button class="pill fav" data-f="fav">♥ Favorites</button>
         </div>
 
-        <div class="news-grid" id="newsGrid">
-            <div style="grid-column:1/-1; text-align:center; padding:50px; color:#9ca3af;">Loading Intelligence...</div>
+        <div class="news-list" id="grid">
+            <div style="grid-column:1/-1; text-align:center; padding:50px; color:#9ca3af;">
+                <i class="fas fa-spinner fa-spin"></i> Loading Intelligence...
+            </div>
         </div>
 
         <aside class="sidebar">
-            <div class="report-card">
-                <h3 style="margin-top:0"><i class="fas fa-file-alt"></i> Executive Summary</h3>
-                <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">Based on current view</div>
-                <div id="reportPreview" style="font-family:monospace; font-size:11px; background:#f9fafb; padding:10px; border-radius:6px; min-height:100px; color:#374151;">
-                    Select news to preview impact analysis...
+            <div class="panel">
+                <h3 style="margin-top:0">Executive Summary</h3>
+                <p style="font-size:13px; color:#6b7280;">Select news items (checkbox) to generate a strategic report.</p>
+
+                <div id="selectedCount" style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:10px;">
+                    0 items selected
                 </div>
-                <button class="btn-gen" onclick="alert('Report Generation Triggered')">Generate Report</button>
+
+                <button class="gen-btn" onclick="generateReport()">
+                    <i class="fas fa-file-alt"></i> Generate Report
+                </button>
+
+                <div id="reportOutput" style="margin-top:15px; font-family:monospace; font-size:11px; background:#f8fafc; padding:10px; border-radius:6px; max-height:400px; overflow-y:auto; display:none;"></div>
             </div>
         </aside>
     </div>
 
     <script>
-        let allNews = [];
-        let currentUser = JSON.parse(localStorage.getItem('htc_user'));
+        let NEWS = [];
+        let USER = JSON.parse(localStorage.getItem('htc_user'));
+        let SELECTED = new Set();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            loadNews();
-        });
+        window.onload = () => { updateAuthUI(); fetchNews(); };
 
-        // --- 核心逻辑：加载新闻 ---
-        async function loadNews() {
+        // 1. Fetch Data
+        async function fetchNews() {
             try {
-                // 1. 获取新闻
                 const res = await fetch('/api/news');
                 const json = await res.json();
 
-                // 2. 获取收藏 (如果已登录)
-                let favorites = [];
-                if (currentUser) {
-                    const favRes = await fetch(`/api/favorites?userId=${currentUser.uid}`);
-                    const favJson = await favRes.json();
-                    if (favJson.success) favorites = favJson.data.map(f => f.newsId); // 假设后端返回格式
+                // Fetch Favorites
+                let favs = [];
+                if(USER) {
+                    try {
+                        const fRes = await fetch(`/api/favorites?userId=${USER.uid}`);
+                        const fJson = await fRes.json();
+                        if(fJson.success) favs = fJson.data.map(i => i.newsId);
+                    } catch(e){}
                 }
 
-                if (json.success) {
-                    // 合并收藏状态
-                    allNews = json.data.map(item => ({
-                        ...item,
-                        isFavorite: favorites.includes(item._id) || item.isFavorite // 兼容两种返回格式
+                if(json.success) {
+                    NEWS = json.data.map(n => ({
+                        ...n,
+                        isFav: favs.includes(n._id) || n.isFavorite
                     }));
-                    renderNews(allNews);
+                    render(NEWS);
                 }
-            } catch (e) {
-                console.error(e);
-                document.getElementById('newsGrid').innerHTML = '<div style="text-align:center;">暂无数据 (API Connection Failed)</div>';
+            } catch(e) {
+                document.getElementById('grid').innerHTML = '<div style="text-align:center; padding:40px;">API Error. Please check backend.</div>';
             }
         }
 
-        // --- 核心逻辑：渲染卡片 ---
-        function renderNews(list) {
-            const grid = document.getElementById('newsGrid');
-            if (list.length === 0) {
-                grid.innerHTML = '<div style="text-align:center;">No news found for this category.</div>';
+        // 2. Render Card (Corrected Tags & Checkbox)
+        function render(list) {
+            const grid = document.getElementById('grid');
+            if(list.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px;">No news found.</div>';
                 return;
             }
 
-            grid.innerHTML = list.map(news => {
-                // Summary 兜底
-                const summary = news.summary || news.description || news.snippet || '暂无摘要内容...';
+            grid.innerHTML = list.map(item => {
+                // Summary Fallback
+                const summary = item.summary || item.description || item.snippet || 'No summary available...';
 
-                // Sentiment 颜色
-                let tagClass = 'tag-gray';
-                if (news.sentiment === '利好') tagClass = 'tag-green';
-                if (news.sentiment === '威胁') tagClass = 'tag-red';
+                // Sentiment Badge
+                let sentClass = 'neu';
+                if(item.sentiment === '利好') sentClass = 'pos';
+                if(item.sentiment === '威胁') sentClass = 'neg';
 
-                // Insight 显示
-                let insightHTML = news.insight;
-                if (!insightHTML || insightHTML === 'Pending analysis') {
-                    insightHTML = '<span style="font-style:italic; opacity:0.7;">Click to generate insight...</span>';
-                }
+                // Categories Badge (Fix Tags)
+                const cats = item.categories || [];
+                const catHtml = cats.map(c => `<span class="badge trend">${c}</span>`).join('');
+
+                // Insight Text
+                let ins = item.insight;
+                if(!ins || ins === 'Pending analysis') ins = 'AI analysis pending...';
+
+                // Checkbox State
+                const checked = SELECTED.has(item._id) ? 'checked' : '';
+                const cardClass = SELECTED.has(item._id) ? 'card selected' : 'card';
 
                 return `
-                <div class="news-card">
-                    <div class="card-top">
+                <div class="${cardClass}" id="card-${item._id}">
+                    <div class="card-header">
                         <div class="tags">
-                            <span class="${tagClass}">${news.sentiment || '中立'}</span>
-                            <span class="tag-gray">${news.source || 'News'}</span>
+                            <span class="badge ${sentClass}">${item.sentiment || 'Neutral'}</span>
+                            ${catHtml}
                         </div>
-                        <button class="btn-heart ${news.isFavorite ? 'active' : ''}" onclick="toggleFav(this, '${news._id}')">
-                            <i class="${news.isFavorite ? 'fas' : 'far'} fa-heart"></i>
-                        </button>
                     </div>
 
-                    <h3 class="news-title">${news.title}</h3>
-                    <p class="news-summary">${summary}</p>
+                    <h3 class="card-title">${item.title}</h3>
+                    <p class="card-summary">${summary}</p>
 
-                    <div class="insight-box">
-                        <div class="insight-header"><i class="fas fa-lightbulb"></i> HTC Insight</div>
-                        <div class="insight-text">${insightHTML}</div>
+                    <div class="insight">
+                        <h4><i class="fas fa-lightbulb"></i> HTC Insight</h4>
+                        <p>${ins}</p>
                     </div>
 
-                    <div style="margin-top:10px; font-size:11px; color:#9ca3af; display:flex; justify-content:space-between;">
-                        <span>${new Date(news.date).toLocaleDateString()}</span>
-                        <a href="${news.url}" target="_blank" style="color:var(--primary); text-decoration:none;">Original Link &rarr;</a>
+                    <div class="action-bar">
+                        <label class="check-group">
+                            <input type="checkbox" onchange="toggleSelect('${item._id}')" ${checked}>
+                            Add to report
+                        </label>
+
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span style="font-size:11px; color:#9ca3af;">${new Date(item.date).toLocaleDateString()}</span>
+                            <button class="btn-fav ${item.isFav?'active':''}" onclick="toggleFav('${item._id}')">
+                                <i class="${item.isFav?'fas':'far'} fa-heart"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 `;
             }).join('');
         }
 
-        // --- 交互：筛选 ---
-        document.getElementById('filterBar').addEventListener('click', (e) => {
-            if (e.target.classList.contains('filter-btn')) {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
+        // 3. Logic: Selection
+        window.toggleSelect = (id) => {
+            if(SELECTED.has(id)) SELECTED.delete(id);
+            else SELECTED.add(id);
 
-                const filter = e.target.dataset.filter;
-                if (filter === 'all') {
-                    renderNews(allNews);
-                } else if (filter === 'favorites') {
-                    renderNews(allNews.filter(n => n.isFavorite));
-                } else {
-                    renderNews(allNews.filter(n => JSON.stringify(n).includes(filter))); // 模糊匹配
-                }
-            }
-        });
+            // UI Update without full re-render
+            const card = document.getElementById(`card-${id}`);
+            if(SELECTED.has(id)) card.classList.add('selected');
+            else card.classList.remove('selected');
 
-        // --- 交互：收藏 ---
-        window.toggleFav = async function(btn, id) {
-            if (!currentUser) { showLogin(); return; }
-
-            // UI Optimistic Update
-            btn.classList.toggle('active');
-            const icon = btn.querySelector('i');
-            icon.classList.toggle('fas');
-            icon.classList.toggle('far');
-
-            // Sync Data
-            const newsItem = allNews.find(n => n._id === id);
-            if (newsItem) newsItem.isFavorite = !newsItem.isFavorite;
-
-            // API Call
-            try {
-                const method = btn.classList.contains('active') ? 'POST' : 'DELETE';
-                await fetch('/api/favorites', {
-                    method: method,
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ userId: currentUser.uid, newsId: id })
-                });
-            } catch(e) { console.error(e); }
+            document.getElementById('selectedCount').innerText = `${SELECTED.size} items selected`;
         };
 
-        // --- 认证：登录/登出 ---
-        function checkAuth() {
-            if (currentUser) {
-                document.getElementById('welcomeMsg').textContent = `Hi, ${currentUser.name}`;
-                document.getElementById('btnLogin').style.display = 'none';
-                document.getElementById('btnLogout').style.display = 'block';
+        // 4. Logic: Generate Report
+        window.generateReport = async () => {
+            const output = document.getElementById('reportOutput');
+            const selectedIds = Array.from(SELECTED);
+
+            if(selectedIds.length === 0) {
+                alert('Please check "Add to report" on at least one news item.');
+                return;
+            }
+
+            output.style.display = 'block';
+            output.innerText = "Generating report via DeepSeek API...\nThis may take 10-20 seconds...";
+
+            // Find full news objects
+            const selectedNews = NEWS.filter(n => selectedIds.includes(n._id));
+
+            try {
+                const res = await fetch('/api/generate-report', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ selectedNews })
+                });
+                const json = await res.json();
+                if(json.success) {
+                    output.innerText = json.data; // Markdown report
+                } else {
+                    output.innerText = "Error: " + json.message;
+                }
+            } catch(e) {
+                output.innerText = "Network Error.";
+            }
+        };
+
+        // 5. Logic: Favorites
+        window.toggleFav = async (id) => {
+            if(!USER) { document.getElementById('loginModal').style.display='flex'; return; }
+
+            const item = NEWS.find(n => n._id === id);
+            item.isFav = !item.isFav;
+
+            // Re-render only if looking at favs filter
+            const currentFilter = document.querySelector('.pill.active').dataset.f;
+            if(currentFilter === 'fav') render(NEWS.filter(n => n.isFav));
+            else render(filterNews(currentFilter));
+
+            try {
+                const method = item.isFav ? 'POST' : 'DELETE';
+                await fetch('/api/favorites', {
+                    method, headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({userId: USER.uid, newsId: id})
+                });
+            } catch(e){}
+        };
+
+        // 6. Logic: Filters
+        document.getElementById('filters').addEventListener('click', (e) => {
+            if(!e.target.classList.contains('pill')) return;
+            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            e.target.classList.add('active');
+
+            const f = e.target.dataset.f;
+            render(filterNews(f));
+        });
+
+        function filterNews(f) {
+            if(f === 'all') return NEWS;
+            if(f === 'fav') return NEWS.filter(n => n.isFav);
+            return NEWS.filter(n => (n.categories||[]).includes(f));
+        }
+
+        // 7. Auth Logic
+        function updateAuthUI() {
+            const area = document.getElementById('userArea');
+            if(USER) {
+                area.innerHTML = `<span style="font-size:13px; margin-right:10px;">${USER.name}</span><button class="user-btn" onclick="doLogout()" style="background:#fee2e2; color:#b91c1b;">Logout</button>`;
             } else {
-                document.getElementById('welcomeMsg').textContent = 'Guest';
-                document.getElementById('btnLogin').style.display = 'block';
-                document.getElementById('btnLogout').style.display = 'none';
+                area.innerHTML = `<button class="user-btn btn-login" onclick="document.getElementById('loginModal').style.display='flex'">Login</button>`;
             }
         }
 
-        function showLogin() { document.getElementById('loginModal').style.display = 'flex'; }
-
-        window.handleLogin = async function() {
-            const u = document.getElementById('username').value;
-            const p = document.getElementById('password').value;
-
-            // 简单模拟 (实际应调用 /api/login)
-            if (u === 'admin' && p === 'admin') {
-                currentUser = { uid: 'u_123', name: 'Admin' };
-                localStorage.setItem('htc_user', JSON.stringify(currentUser));
-                document.getElementById('loginModal').style.display = 'none';
-                checkAuth();
-                loadNews(); // Reload to get favorites
-            } else {
-                // 尝试调用 API
+        window.doLogin = async () => {
+            const u = document.getElementById('u').value;
+            const p = document.getElementById('p').value;
+            // Mock Login for Demo (Or replace with real API)
+            if(u) {
                 try {
                     const res = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ username: u, password: p })
+                         method:'POST', headers:{'Content-Type':'application/json'},
+                         body: JSON.stringify({username:u, password:p})
                     });
-                    const json = await res.json();
-                    if (json.success) {
-                        currentUser = json.user;
-                        localStorage.setItem('htc_user', JSON.stringify(currentUser));
-                        document.getElementById('loginModal').style.display = 'none';
-                        checkAuth();
-                        loadNews();
-                    } else {
-                        document.getElementById('loginError').style.display = 'block';
-                    }
-                } catch(e) {
-                    document.getElementById('loginError').innerText = "Login API Error";
-                    document.getElementById('loginError').style.display = 'block';
-                }
+                    const j = await res.json();
+                    if(j.success) {
+                        USER = j.user;
+                        localStorage.setItem('htc_user', JSON.stringify(USER));
+                        document.getElementById('loginModal').style.display='none';
+                        updateAuthUI(); fetchNews();
+                    } else alert('Login failed');
+                } catch(e) { alert('API Error'); }
             }
         };
 
-        window.handleLogout = function() {
-            localStorage.removeItem('htc_user');
-            currentUser = null;
-            checkAuth();
-            loadNews(); // Clear favorites view
-        };
-
-        // Close modal on outside click
-        document.getElementById('loginModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('loginModal')) {
-                document.getElementById('loginModal').style.display = 'none';
-            }
-        });
+        window.doLogout = () => { localStorage.removeItem('htc_user'); USER=null; updateAuthUI(); fetchNews(); };
+        document.getElementById('loginModal').onclick = (e) => { if(e.target.id==='loginModal') e.target.style.display='none'; }
     </script>
 </body>
 </html>
