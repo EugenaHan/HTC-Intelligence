@@ -8,183 +8,162 @@
     <style>
         :root {
             --primary: #0066cc;
-            --bg: #f0f2f5;
-            --text: #1f2937;
+            --bg: #f4f7fe;
+            --text: #2b3674;
+            --green: #05cd99;
+            --red: #e31a1a;
+            --gray: #a3aed0;
         }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
         * { box-sizing: border-box; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
 
-        /* 1. Header */
-        header {
-            background: white; height: 64px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .logo { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-        .user-btn { padding: 6px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
-        .btn-login { background: var(--primary); color: white; }
+        /* 顶部导航 */
+        header { background: white; height: 64px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .logo { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; gap: 8px; align-items: center; }
 
-        /* Language Toggle */
-        .header-right { display: flex; gap: 20px; align-items: center; }
-        .lang-switch {
-            background: #f0f2f5; border-radius: 20px; padding: 4px; display: flex; gap: 4px;
-        }
-        .lang-btn {
-            border: none; background: transparent; padding: 4px 12px; border-radius: 16px;
-            font-size: 12px; font-weight: 700; color: #a0aec0; cursor: pointer; transition: 0.2s;
-        }
-        .lang-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        /* 主布局 */
+        .layout { max-width: 1400px; margin: 24px auto; display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 0 20px; }
 
-        /* 2. Layout */
-        .layout {
-            max-width: 1400px; margin: 24px auto; padding: 0 20px;
-            display: grid; grid-template-columns: 1fr 380px; gap: 24px;
+        /* --- 核心升级：高管仪表盘控制台 --- */
+        .controls {
+            grid-column: 1/-1;
+            background: white;
+            padding: 20px 25px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
         }
 
-        /* 3. Filters */
-        .filters {
-            grid-column: 1 / -1; background: white; padding: 16px; border-radius: 12px;
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-        }
+        /* 1. 计数器行 */
+        .counter-box { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--text); border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 5px;}
+        .count-badge { background: #eef2ff; color: var(--primary); padding: 4px 10px; border-radius: 6px; font-size: 14px; font-weight: 800; }
+
+        /* 2. 筛选行 */
+        .filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .filter-label { font-size: 12px; font-weight: 700; color: var(--gray); text-transform: uppercase; min-width: 85px; }
+
+        /* 按钮 Pills */
         .pill {
-            border: 1px solid #e5e7eb; background: white; padding: 6px 16px; border-radius: 20px;
-            font-size: 13px; font-weight: 500; color: #4b5563; cursor: pointer; transition: 0.2s;
+            border: 1px solid #e0e5f2;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            transition: 0.2s;
         }
-        .pill:hover { border-color: var(--primary); color: var(--primary); }
-        .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .pill.fav { color: #dc2626; border-color: #fecaca; }
-        .pill.fav.active { background: #dc2626; color: white; }
+        .pill:hover { border-color: var(--primary); color: var(--primary); background: #f8faff; }
 
-        /* Month Dropdown */
-        .month-select {
-            padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 20px;
-            font-size: 13px; font-weight: 500; color: #4b5563; outline: none;
-            background: white; cursor: pointer; margin-left: auto;
-        }
-        .month-select:hover { border-color: var(--primary); }
+        /* 激活状态：普通 Tab */
+        .pill.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(0,102,204,0.2); }
 
-        /* 4. News Grid */
-        .news-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        /* 激活状态：利好 (绿) */
+        .pill.pos { color: var(--green); border-color: #e0fbf4; }
+        .pill.pos.active { background: var(--green); color: white; border-color: var(--green); box-shadow: 0 4px 10px rgba(5,205,153,0.2); }
 
-        .card {
-            background: white; border-radius: 12px; padding: 20px;
-            display: flex; flex-direction: column; gap: 12px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.2s;
-            position: relative; border: 1px solid transparent;
-        }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
-        .card.selected { border: 2px solid var(--primary); background: #f0f9ff; }
+        /* 激活状态：威胁 (红) */
+        .pill.neg { color: var(--red); border-color: #ffe5e5; }
+        .pill.neg.active { background: var(--red); color: white; border-color: var(--red); box-shadow: 0 4px 10px rgba(227,26,26,0.2); }
 
-        /* Card Tags */
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-        .badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
-        .badge.trend { background: #eff6ff; color: #1e40af; }
-        .badge.pos { background: #def7ec; color: #03543f; }
-        .badge.neg { background: #fde8e8; color: #9b1c1c; }
-        .badge.neu { background: #f3f4f6; color: #374151; }
+        /* 激活状态：收藏 (粉) */
+        .pill.fav.active { background: #ff5b5b; color: white; border-color: #ff5b5b; }
 
-        /* Content */
-        .card-title { font-size: 16px; font-weight: 700; line-height: 1.4; margin: 0; color: #111827; }
-        .card-summary {
-            font-size: 13px; color: #4b5563; line-height: 1.6; margin: 0;
-            display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
-        }
+        /* --- 卡片设计 --- */
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: 0.2s; cursor: pointer; border: 2px solid transparent; position: relative; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
+        .card.selected { border-color: var(--primary); background: #f4faff; }
 
-        /* Insight Box */
-        .insight { background: linear-gradient(90deg, #eef2ff 0%, #f5f8ff 100%); border-left: 4px solid #4318ff; padding: 12px; border-radius: 0 8px 8px 0; margin-top: auto; }
-        .insight h4 { font-size: 11px; margin: 0 0 5px 0; color: #4318ff; }
-        .insight p { font-size: 12px; margin: 0; color: #2b3674; line-height: 1.5; }
+        /* 标签行 */
+        .tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag { font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tag.industry { background: #E6F0FF; color: #0052cc; }
 
-        /* Action Bar (Checkbox + Fav) */
-        .action-bar {
-            margin-top: 10px; padding-top: 10px; border-top: 1px solid #f3f4f6;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .check-group { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; cursor: pointer; }
-        .check-group input { width: 16px; height: 16px; cursor: pointer; }
+        /* 情感标签颜色 */
+        .tag.pos { background: #E6F7F1; color: #00B69B; } /* 绿底绿字 */
+        .tag.neg { background: #FFF0F0; color: #E31A1A; } /* 红底红字 */
+        .tag.neu { background: #F4F7FE; color: #858D9D; } /* 灰底灰字 */
 
-        .btn-fav { background: none; border: none; font-size: 18px; cursor: pointer; color: #d1d5db; transition: 0.2s; }
-        .btn-fav:hover { transform: scale(1.2); }
-        .btn-fav.active { color: #ef4444; }
+        .card-title { font-size: 16px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.5; color: #1B2559; }
+        .card-summary { font-size: 13px; color: #707EAE; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1; }
 
-        /* 5. Sidebar */
+        .insight { background: linear-gradient(90deg, #F4F7FE 0%, #ffffff 100%); border-left: 4px solid var(--primary); padding: 12px; border-radius: 0 8px 8px 0; margin-top: 15px; }
+        .insight h4 { margin: 0 0 5px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); }
+        .insight p { margin: 0; font-size: 12px; color: #2B3674; font-weight: 500; }
+
+        .footer { margin-top: 15px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f0f0; padding-top: 10px; font-size: 11px; color: #A3AED0; }
+
+        /* Sidebar & Lang */
         .sidebar { position: sticky; top: 100px; height: fit-content; }
-        .panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .gen-btn {
-            width: 100%; background: var(--primary); color: white; border: none; padding: 12px;
-            border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 15px;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .gen-btn:hover { background: #0052a3; }
+        .panel { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .gen-btn { width: 100%; background: var(--primary); color: white; padding: 14px; border-radius: 12px; border: none; font-weight: 700; margin-top: 20px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,102,204,0.3); }
+        .gen-btn:hover { background: #0052cc; transform: translateY(-2px); }
 
-        /* Mobile */
-        @media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+        .lang-switch { background: #f4f7fe; padding: 4px; border-radius: 20px; display: flex; }
+        .lang-btn { border: none; background: transparent; padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; color: #a0aec0; cursor: pointer; }
+        .lang-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
-        /* Login Modal */
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center; }
-        .modal-box { background:white; padding:30px; border-radius:12px; width:300px; text-align:center; }
-        .inp { width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; }
+        @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
     </style>
 </head>
 <body>
-
-    <div class="modal" id="loginModal">
-        <div class="modal-box">
-            <h3 data-t="login_title">Login</h3>
-            <input type="text" id="u" class="inp" placeholder="Username">
-            <input type="password" id="p" class="inp" placeholder="Password">
-            <button class="user-btn btn-login" style="width:100%" onclick="doLogin()" data-t="login_btn">Sign In</button>
-        </div>
-    </div>
-
     <header>
-        <div class="logo"><i class="fas fa-globe-asia"></i> <span data-t="brand">HTC Market Intelligence</span></div>
-        <div class="header-right">
-            <div class="lang-switch">
-                <button class="lang-btn active" onclick="setLang('cn')">中文</button>
-                <button class="lang-btn" onclick="setLang('en')">EN</button>
-            </div>
-            <div id="userArea">
-                <button class="user-btn btn-login" onclick="document.getElementById('loginModal').style.display='flex'" data-t="login">Login</button>
-            </div>
+        <div class="logo">
+            <i class="fas fa-radar" style="color:var(--primary)"></i>
+            <span data-t="brand">HTC Intelligence</span>
+        </div>
+        <div class="lang-switch">
+            <button class="lang-btn active" onclick="setLang('cn')">中文</button>
+            <button class="lang-btn" onclick="setLang('en')">EN</button>
         </div>
     </header>
 
     <div class="layout">
-        <div class="filters" id="filters">
-            <div style="font-size:12px; font-weight:700; color:#9ca3af; margin-right:10px;" data-t="filter_label">MARKET SEGMENT:</div>
-            <button class="pill active" data-f="all" data-t="filter_all">All</button>
-            <button class="pill" data-f="出境游趋势" data-t="filter_trend">Outbound Trend</button>
-            <button class="pill" data-f="消费趋势" data-t="filter_consumption">Consumption</button>
-            <button class="pill" data-f="Short Haul" data-t="filter_short">Short Haul</button>
-            <button class="pill" data-f="Long Haul" data-t="filter_long">Long Haul</button>
-            <button class="pill fav" data-f="fav" data-t="filter_fav">♥ Favorites</button>
+        <div class="controls">
+            <div class="counter-box">
+                <i class="fas fa-chart-pie" style="color:var(--primary)"></i>
+                <span id="counterText">Loading data...</span>
+                <div style="flex-grow:1"></div>
+                <select id="monthSelect" style="padding:6px 12px; border-radius:8px; border:1px solid #e0e0e0; outline:none; font-size:12px; background:#f9f9f9; cursor:pointer;">
+                    <option value="all">📅 All Time</option>
+                </select>
+            </div>
 
-            <select id="monthSelect" class="month-select" onchange="applyFilters()">
-                <option value="all" data-t="all_months">📅 All Months</option>
-            </select>
-        </div>
+            <div class="filter-row">
+                <span class="filter-label" data-t="lbl_cat">Category:</span>
+                <button class="pill active" data-group="cat" data-val="all" data-t="all">All News</button>
+                <button class="pill" data-group="cat" data-val="Outbound Trend" data-t="cat_out">Outbound Trend</button>
+                <button class="pill" data-group="cat" data-val="Consumption Trend" data-t="cat_con">Consumption</button>
+                <button class="pill" data-group="cat" data-val="Short Haul" data-t="cat_sh">Short Haul</button>
+                <button class="pill" data-group="cat" data-val="Long Haul" data-t="cat_lh">Long Haul</button>
+            </div>
 
-        <div class="news-list" id="grid">
-            <div style="grid-column:1/-1; text-align:center; padding:50px; color:#9ca3af;">
-                <i class="fas fa-spinner fa-spin"></i> <span data-t="loading">Loading Intelligence...</span>
+            <div class="filter-row">
+                <span class="filter-label" data-t="lbl_sent">Sentiment:</span>
+                <button class="pill active" data-group="sent" data-val="all" data-t="all">All</button>
+                <button class="pill pos" data-group="sent" data-val="pos" data-t="sent_pos">Positive</button>
+                <button class="pill neg" data-group="sent" data-val="neg" data-t="sent_neg">Threat</button>
+                <div style="flex-grow:1"></div>
+                <button class="pill fav" data-group="fav" onclick="toggleFavFilter(this)" data-t="fav">
+                    <i class="fas fa-heart"></i> Favorites
+                </button>
             </div>
         </div>
 
+        <div class="news-grid" id="grid"></div>
+
         <aside class="sidebar">
             <div class="panel">
-                <h3 style="margin-top:0" data-t="report_title">Executive Summary</h3>
-                <p style="font-size:13px; color:#6b7280;" data-t="report_desc">Select news items (checkbox) to generate a strategic report.</p>
-
-                <div id="selectedCount" style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:10px;" data-t="selected_count">
-                    0 items selected
-                </div>
-
-                <button class="gen-btn" onclick="generateReport()">
-                    <i class="fas fa-file-alt"></i> <span data-t="gen_btn">Generate Report</span>
-                </button>
-
-                <div id="reportOutput" style="margin-top:15px; font-family:monospace; font-size:11px; background:#f8fafc; padding:10px; border-radius:6px; max-height:400px; overflow-y:auto; display:none;"></div>
+                <h3 data-t="rep_title">Executive Summary</h3>
+                <p data-t="rep_desc" style="font-size:13px; color:var(--gray);">Select items to generate report.</p>
+                <div id="selCount" style="color:var(--primary); font-weight:800; font-size:18px; margin:15px 0;">0 items</div>
+                <div style="height:1px; background:#f0f0f0; margin-bottom:15px;"></div>
+                <div id="reportOut" style="font-size:12px; color:#555; white-space:pre-wrap; max-height:300px; overflow-y:auto;"></div>
+                <button class="gen-btn" onclick="generateReport()" data-t="btn_gen">Generate Report</button>
             </div>
         </aside>
     </div>
@@ -193,359 +172,182 @@
         // 翻译字典
         const I18N = {
             cn: {
-                brand: "HTC 市场情报",
-                login: "登录",
-                login_title: "登录",
-                login_btn: "登录",
-                logout: "退出",
-                filter_label: "市场细分:",
-                filter_all: "全部",
-                filter_trend: "出境游趋势",
-                filter_consumption: "消费趋势",
-                filter_short: "短线市场",
-                filter_long: "长线市场",
-                filter_fav: "♥ 我的收藏",
-                all_months: "📅 全部月份",
-                loading: "正在加载全球情报...",
-                no_data: "暂无数据",
-                report_title: "高层摘要报告",
-                report_desc: "勾选新闻以生成战略报告",
-                selected_count: "已选择 0 项",
-                gen_btn: "生成报告",
-                add_report: "加入报告",
-                insight_title: "HTC 战略洞察",
-                sent_pos: "利好",
-                sent_neg: "威胁",
-                sent_neu: "中立",
-                items_selected: "已选择 {n} 项"
+                brand: "HTC 市场情报中心",
+                lbl_cat: "市场分类:", lbl_sent: "情感筛选:",
+                all: "全部情报",
+                cat_out: "出境游趋势", cat_con: "消费趋势", cat_sh: "短线竞对", cat_lh: "长线竞对",
+                sent_pos: "利好消息", sent_neg: "威胁/警报", sent_neu: "中立", fav: "我的收藏",
+                rep_title: "高管摘要报告", rep_desc: "勾选新闻以生成战略报告", btn_gen: "生成报告",
+                add: "加入报告", orig: "来源", insight: "HTC 洞察",
+                count_fmt: "总计 {total} 条，显示 <span class='count-badge'>{shown}</span> 条",
+                loading: "正在连接情报中心..."
             },
             en: {
-                brand: "HTC Market Intelligence",
-                login: "Login",
-                login_title: "Login",
-                login_btn: "Sign In",
-                logout: "Logout",
-                filter_label: "MARKET SEGMENT:",
-                filter_all: "All",
-                filter_trend: "Outbound Trend",
-                filter_consumption: "Consumption",
-                filter_short: "Short Haul",
-                filter_long: "Long Haul",
-                filter_fav: "♥ Favorites",
-                all_months: "📅 All Months",
-                loading: "Loading Intelligence...",
-                no_data: "No Data Found",
-                report_title: "Executive Summary",
-                report_desc: "Select news items (checkbox) to generate a strategic report.",
-                selected_count: "0 items selected",
-                gen_btn: "Generate Report",
-                add_report: "Add to report",
-                insight_title: "HTC Strategic Insight",
-                sent_pos: "Positive",
-                sent_neg: "Threat",
-                sent_neu: "Neutral",
-                items_selected: "{n} items selected"
+                brand: "HTC Intelligence",
+                lbl_cat: "Category:", lbl_sent: "Sentiment:",
+                all: "All News",
+                cat_out: "Outbound Trend", cat_con: "Consumption", cat_sh: "Short Haul", cat_lh: "Long Haul",
+                sent_pos: "Positive", sent_neg: "Threat/Alert", sent_neu: "Neutral", fav: "Favorites",
+                rep_title: "Executive Summary", rep_desc: "Select items for report", btn_gen: "Generate Report",
+                add: "Add to Report", orig: "Source", insight: "HTC Insight",
+                count_fmt: "Total {total} items, showing <span class='count-badge'>{shown}</span>",
+                loading: "Loading Intelligence..."
             }
         };
 
-        let CUR_LANG = 'cn'; // 默认中文
-        let NEWS = [];
-        let USER = JSON.parse(localStorage.getItem('htc_user'));
-        let SELECTED = new Set();
+        let CUR_LANG = 'cn';
+        let NEWS = [], FILTERED = [], SELECTED = new Set();
+        let FILTERS = { cat: 'all', sent: 'all', month: 'all', fav: false };
 
-        window.onload = async () => {
-            initMonths();
-            updateAuthUI();
-            await fetchNews();
-            setLang('cn'); // 初始化为中文
-        };
+        window.onload = async () => { initMonths(); await fetchNews(); setLang('cn'); };
 
-        // 语言切换核心逻辑
-        window.setLang = (lang) => {
-            CUR_LANG = lang;
-
-            // 1. 更新按钮状态
-            document.querySelectorAll('.lang-btn').forEach(b => {
-                b.classList.toggle('active', b.innerText.toLowerCase().includes(lang === 'cn' ? '中文' : 'en'));
-            });
-
-            // 2. 更新静态文本
-            document.querySelectorAll('[data-t]').forEach(el => {
-                const key = el.dataset.t;
-                if (I18N[lang][key]) el.innerText = I18N[lang][key];
-            });
-
-            // 3. 重新渲染列表 (切换内容语言)
-            render(document.getElementById('grid').getAttribute('data-filtered') || '[]');
-        };
-
-        // 初始化月份下拉框（最近6个月）
         function initMonths() {
             const sel = document.getElementById('monthSelect');
             const now = new Date();
-
-            for (let i = 0; i < 6; i++) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                const label = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-
-                const opt = document.createElement('option');
-                opt.value = val;
-                opt.textContent = `📅 ${label}`;
-                sel.appendChild(opt);
+            for(let i=0; i<6; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+                const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                sel.add(new Option(d.toLocaleDateString(undefined, {year:'numeric',month:'short'}), val));
             }
+            sel.onchange = (e) => { FILTERS.month = e.target.value; applyFilters(); };
         }
 
-        // 1. Fetch Data
         async function fetchNews() {
             try {
                 const res = await fetch('/api/news');
                 const json = await res.json();
-
-                // Fetch Favorites
-                let favs = [];
-                if(USER) {
-                    try {
-                        const fRes = await fetch(`/api/favorites?userId=${USER.uid}`);
-                        const fJson = await fRes.json();
-                        if(fJson.success) favs = fJson.data.map(i => i.newsId);
-                    } catch(e){}
-                }
-
-                if(json.success) {
-                    NEWS = json.data.map(n => ({
-                        ...n,
-                        isFav: favs.includes(n._id) || n.isFavorite
-                    })).sort((a,b) => new Date(b.date) - new Date(a.date)); // 按时间倒序
-
-                    // 应用初始过滤器
+                if (json.success) {
+                    NEWS = json.data.sort((a,b) => new Date(b.date) - new Date(a.date));
                     applyFilters();
                 }
-            } catch(e) {
-                document.getElementById('grid').innerHTML = `<div style="text-align:center; padding:40px;">${I18N[CUR_LANG].loading}</div>`;
-            }
+            } catch(e) {}
         }
 
-        // 2. Render Card (双语支持)
+        function applyFilters() {
+            FILTERED = NEWS.filter(n => {
+                // 1. 收藏过滤
+                if (FILTERS.fav) return n.isFavorite;
+
+                // 2. 核心分类过滤 (Tab)
+                const cats = (n.categories || []).join('|');
+                let catMatch = FILTERS.cat === 'all';
+                if (!catMatch) {
+                    // 如果新闻包含该大类标签，或者属于该大类的子集
+                    catMatch = cats.includes(FILTERS.cat);
+                }
+
+                // 3. 情感过滤
+                const s = (n.sentiment || '').toLowerCase();
+                let sentMatch = FILTERS.sent === 'all';
+                if (!sentMatch) {
+                    if (FILTERS.sent === 'pos') sentMatch = s.includes('positive') || s.includes('利好');
+                    else if (FILTERS.sent === 'neg') sentMatch = s.includes('negative') || s.includes('threat') || s.includes('威胁');
+                    // 默认其他为中立，暂不严卡中立
+                }
+
+                // 4. 月份过滤
+                const monthMatch = FILTERS.month === 'all' ||
+                    (n.date && n.date.substring(0, 7) === FILTERS.month);
+
+                return catMatch && sentMatch && monthMatch;
+            });
+            render(FILTERED);
+        }
+
         function render(list) {
+            const T = I18N[CUR_LANG];
+
+            // 更新计数器
+            const counterHtml = T.count_fmt.replace('{total}', NEWS.length).replace('{shown}', list.length);
+            document.getElementById('counterText').innerHTML = counterHtml;
+
             const grid = document.getElementById('grid');
-            const T = I18N[CUR_LANG]; // 当前语言包
-
-            // 保存当前过滤后的列表供语言切换使用
-            grid.setAttribute('data-filtered', JSON.stringify(list));
-
             if(list.length === 0) {
-                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px;">${T.no_data}</div>`;
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px;">${T.loading}</div>`;
                 return;
             }
 
             grid.innerHTML = list.map(item => {
-                // 动态选择字段（根据当前语言）
-                const title = CUR_LANG === 'cn' ? (item.title_cn || item.title) : item.title;
-                const summary = CUR_LANG === 'cn' ? (item.summary_cn || item.summary || item.description || item.snippet || '暂无摘要...') : (item.summary || item.description || item.snippet || 'No summary available...');
-                const insight = CUR_LANG === 'cn' ? (item.insight_cn || item.insight || '分析中...') : (item.insight_en || item.insight || 'Analysis pending...');
+                const title = CUR_LANG==='cn' ? (item.title_cn||item.title) : item.title;
+                const summary = CUR_LANG==='cn' ? (item.summary_cn||item.summary) : item.summary;
+                const insight = CUR_LANG==='cn' ? (item.insight_cn||item.insight) : (item.insight_en||item.insight);
 
-                // 情感标签翻译
-                let sentLabel = item.sentiment || 'Neutral';
-                if(sentLabel === '利好' || sentLabel === 'Positive') sentLabel = T.sent_pos;
-                if(sentLabel === '威胁' || sentLabel === 'Threat') sentLabel = T.sent_neg;
-                if(sentLabel === '中立' || sentLabel === 'Neutral') sentLabel = T.sent_neu;
+                // 情感颜色判定 (强制修复白色问题)
+                const s = (item.sentiment || '').toLowerCase();
+                let color = 'neu', label = T.sent_neu;
+                if (s.includes('neg') || s.includes('threat') || s.includes('威胁')) { color='neg'; label=T.sent_neg; }
+                else if (s.includes('pos') || s.includes('利好')) { color='pos'; label=T.sent_pos; }
 
-                let sentClass = sentLabel === T.sent_pos ? 'pos' : (sentLabel === T.sent_neg ? 'neg' : 'neu');
-
-                // Categories Badge
-                const cats = item.categories || [];
-                const catHtml = cats.map(c => `<span class="badge trend">${c}</span>`).join('');
-
-                // Checkbox State
-                const checked = SELECTED.has(item._id) ? 'checked' : '';
-                const cardClass = SELECTED.has(item._id) ? 'card selected' : 'card';
+                // 行业标签 (Industry Tags) - 过滤掉大类标签，只留细分
+                const bigCats = ['Short Haul', 'Long Haul', 'Consumption Trend', 'Outbound Trend', 'Market Trend'];
+                const tags = (item.categories||[]).filter(c => !bigCats.includes(c)).slice(0,3)
+                    .map(c => `<span class="tag industry">${c}</span>`).join('');
 
                 return `
-                <div class="${cardClass}" id="card-${item._id}" onclick="window.open('${item.url}', '_blank')">
-                    <div class="card-header">
-                        <div class="tags">
-                            <span class="badge ${sentClass}">${sentLabel}</span>
-                            ${catHtml}
-                        </div>
+                <div class="card ${SELECTED.has(item._id)?'selected':''}" onclick="window.open('${item.url}')">
+                    <div class="tags-row">
+                        <span class="tag ${color}">${label}</span>
+                        ${tags}
                     </div>
-
-                    <h3 class="card-title">${title}</h3>
-                    <p class="card-summary">${summary}</p>
-
+                    <div class="card-title">${title}</div>
+                    <div class="card-summary">${summary}</div>
                     <div class="insight">
-                        <h4><i class="fas fa-lightbulb"></i> ${T.insight_title}</h4>
+                        <h4><i class="fas fa-lightbulb"></i> ${T.insight}</h4>
                         <p>${insight}</p>
                     </div>
-
-                    <div class="action-bar" onclick="event.stopPropagation()">
-                        <label class="check-group">
-                            <input type="checkbox" onchange="toggleSelect('${item._id}')" ${checked}>
-                            ${T.add_report}
+                    <div class="footer" onclick="event.stopPropagation()">
+                        <label style="display:flex; gap:6px; align-items:center; cursor:pointer; font-weight:600; color:var(--text);">
+                            <input type="checkbox" onchange="toggleSel('${item._id}')" ${SELECTED.has(item._id)?'checked':''}> ${T.add}
                         </label>
-
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <span style="font-size:11px; color:#9ca3af;">${new Date(item.date).toLocaleDateString()}</span>
-                            <button class="btn-fav ${item.isFav?'active':''}" onclick="toggleFav('${item._id}')">
-                                <i class="${item.isFav?'fas':'far'} fa-heart"></i>
-                            </button>
-                        </div>
+                        <span style="color:var(--primary)">${T.orig} &rarr;</span>
                     </div>
-                </div>
-                `;
+                </div>`;
             }).join('');
         }
 
-        // 3. Logic: Selection
-        window.toggleSelect = (id) => {
-            if(SELECTED.has(id)) SELECTED.delete(id);
-            else SELECTED.add(id);
+        // 按钮点击逻辑
+        document.querySelectorAll('.pill').forEach(btn => {
+            if(btn.dataset.group === 'fav') return; // 收藏按钮单独处理
+            btn.onclick = (e) => {
+                const group = e.target.dataset.group;
+                const val = e.target.dataset.val;
+                // 记录状态
+                FILTERS[group] = val;
 
-            // UI Update without full re-render
-            const card = document.getElementById(`card-${id}`);
-            if(SELECTED.has(id)) card.classList.add('selected');
-            else card.classList.remove('selected');
+                // UI 切换 (同组互斥)
+                document.querySelectorAll(`.pill[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
 
-            // 更新选中数量（支持双语）
-            updateSelectedCount();
-        };
-
-        // 更新选中数量显示（支持双语）
-        function updateSelectedCount() {
-            const T = I18N[CUR_LANG];
-            const count = SELECTED.size;
-            document.getElementById('selectedCount').innerText = T.items_selected.replace('{n}', count);
-        }
-
-        // 4. Logic: Generate Report
-        window.generateReport = async () => {
-            const output = document.getElementById('reportOutput');
-            const selectedIds = Array.from(SELECTED);
-
-            if(selectedIds.length === 0) {
-                alert('Please check "Add to report" on at least one news item.');
-                return;
-            }
-
-            output.style.display = 'block';
-            output.innerText = "Generating report via DeepSeek API...\nThis may take 10-20 seconds...";
-
-            // Find full news objects
-            const selectedNews = NEWS.filter(n => selectedIds.includes(n._id));
-
-            try {
-                const res = await fetch('/api/generate-report', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ selectedNews })
-                });
-                const json = await res.json();
-                if(json.success) {
-                    output.innerText = json.data; // Markdown report
-                } else {
-                    output.innerText = "Error: " + json.message;
-                }
-            } catch(e) {
-                output.innerText = "Network Error.";
-            }
-        };
-
-        // 5. Logic: Favorites
-        window.toggleFav = async (id) => {
-            if(!USER) { document.getElementById('loginModal').style.display='flex'; return; }
-
-            const item = NEWS.find(n => n._id === id);
-            item.isFav = !item.isFav;
-
-            // 使用 applyFilters 重新渲染（包含月份和类别过滤）
-            applyFilters();
-
-            try {
-                const method = item.isFav ? 'POST' : 'DELETE';
-                await fetch('/api/favorites', {
-                    method, headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({userId: USER.uid, newsId: id})
-                });
-            } catch(e){}
-        };
-
-        // 6. Logic: Filters
-        document.getElementById('filters').addEventListener('click', (e) => {
-            if(!e.target.classList.contains('pill')) return;
-            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-            e.target.classList.add('active');
-
-            applyFilters();
+                applyFilters();
+            };
         });
 
-        // 核心过滤逻辑（类别 + 月份）
-        window.applyFilters = () => {
-            const catBtn = document.querySelector('.pill.active');
-            const category = catBtn ? catBtn.dataset.f : 'all';
-            const month = document.getElementById('monthSelect').value;
-
-            const filtered = NEWS.filter(item => {
-                // 1. 收藏模式：忽略月份限制，显示所有收藏
-                if (category === 'fav') {
-                    return item.isFav;
-                }
-
-                // 2. 类别过滤
-                let catMatch = (category === 'all') ||
-                    (item.categories && item.categories.includes(category));
-
-                // 3. 月份过滤（收藏模式下跳过）
-                let monthMatch = true;
-                if (month !== 'all') {
-                    const itemMonth = item.date ? item.date.substring(0, 7) : '';
-                    monthMatch = (itemMonth === month);
-                }
-
-                return catMatch && monthMatch;
-            });
-
-            render(filtered);
+        window.toggleFavFilter = (btn) => {
+            FILTERS.fav = !FILTERS.fav;
+            btn.classList.toggle('active');
+            applyFilters();
         };
 
-        function filterNews(f) {
-            // 保留此函数以兼容旧代码，但实际逻辑已移至 applyFilters
-            return applyFilters();
-        }
-
-        // 7. Auth Logic
-        function updateAuthUI() {
-            const area = document.getElementById('userArea');
-            const T = I18N[CUR_LANG];
-            if(USER) {
-                area.innerHTML = `<span style="font-size:13px; margin-right:10px;">${USER.name}</span><button class="user-btn" onclick="doLogout()" style="background:#fee2e2; color:#b91c1b;">${T.logout}</button>`;
-            } else {
-                area.innerHTML = `<button class="user-btn btn-login" onclick="document.getElementById('loginModal').style.display='flex'">${T.login}</button>`;
-            }
-        }
-
-        window.doLogin = async () => {
-            const u = document.getElementById('u').value;
-            const p = document.getElementById('p').value;
-            // Mock Login for Demo (Or replace with real API)
-            if(u) {
-                try {
-                    const res = await fetch('/api/login', {
-                         method:'POST', headers:{'Content-Type':'application/json'},
-                         body: JSON.stringify({username:u, password:p})
-                    });
-                    const j = await res.json();
-                    if(j.success) {
-                        USER = j.user;
-                        localStorage.setItem('htc_user', JSON.stringify(USER));
-                        document.getElementById('loginModal').style.display='none';
-                        updateAuthUI(); fetchNews();
-                    } else alert('Login failed');
-                } catch(e) { alert('API Error'); }
-            }
+        window.setLang = (l) => {
+            CUR_LANG = l;
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(l==='cn'?'中':'en')));
+            document.querySelectorAll('[data-t]').forEach(el => el.innerText = I18N[l][el.dataset.t]);
+            render(FILTERED);
         };
 
-        window.doLogout = () => { localStorage.removeItem('htc_user'); USER=null; updateAuthUI(); fetchNews(); };
-        document.getElementById('loginModal').onclick = (e) => { if(e.target.id==='loginModal') e.target.style.display='none'; }
+        window.toggleSel = (id) => {
+            if(SELECTED.has(id)) SELECTED.delete(id); else SELECTED.add(id);
+            document.getElementById('selCount').innerText = `${SELECTED.size} items`;
+            render(FILTERED);
+        };
+
+        // 简易报告生成
+        window.generateReport = () => {
+            const selItems = NEWS.filter(n => SELECTED.has(n._id));
+            if(selItems.length === 0) { alert('Please select news first!'); return; }
+            const text = selItems.map(n => `- ${n.title_cn || n.title}\n  Insight: ${n.insight_cn || n.insight}`).join('\n\n');
+            document.getElementById('reportOut').innerText = "Generating Strategy...\n\n" + text;
+        };
     </script>
 </body>
 </html>
