@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * 智能爬虫 4.0：RSS 矩阵 + 90天窗口 + 关键词降噪
+ * 智能爬虫 5.0：双语内核版
+ * 功能：抓取 RSS -> AI 生成中英双语标题、摘要、洞察 -> 存入 MongoDB
  * Run: node api/cron.js
  */
 require('dotenv').config({ path: '.env.local' });
@@ -79,41 +80,58 @@ function isRecent(dateString) {
   return diffDays <= DATE_WINDOW_DAYS;
 }
 
-// --- 3. AI 分析核心 ---
+// --- 3. AI 分析核心 (双语版) ---
 
 async function analyzeNews(title, summary) {
   if (!DEEPSEEK_KEY) {
-    return { insight: "AI Key 未配置", sentiment: "中立", title_cn: title };
+    return {
+      title_cn: title,
+      summary_cn: summary,
+      insight_cn: "AI Key Missing",
+      insight_en: "AI Key Missing",
+      sentiment: "Neutral"
+    };
   }
 
-  // 这里的 Prompt 专门加入了翻译指令
-  const prompt = `角色：夏威夷旅游局(HTB)分析师。
-任务：分析新闻《${title}》。
-1. 翻译标题为通顺的中文。
-2. 判定对夏威夷市场情感(利好/中立/威胁)。
-3. 提供30字以内中文战略洞察。
-格式：返回纯JSON（不要Markdown）{"title_cn": "...", "sentiment": "利好/中立/威胁", "insight": "..."}`;
+  const prompt = `Role: Hawaii Tourism Board Analyst.
+Task: Analyze this news for the China market.
+News: "${title}" - "${summary}"
+
+Output JSON ONLY with these fields:
+1. "title_cn": Translate title to Chinese.
+2. "summary_cn": Summarize news in Chinese (max 100 words).
+3. "insight_cn": Strategic implication for Hawaii in Chinese (max 50 words).
+4. "insight_en": Strategic implication for Hawaii in English (max 50 words).
+5. "sentiment": "Positive", "Neutral", or "Negative" (Use English words).`;
 
   try {
     const res = await axios.post(`${DEEPSEEK_BASE}/v1/chat/completions`, {
       model: 'deepseek-chat',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      max_tokens: 250
+      max_tokens: 500
     }, {
       headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
-      timeout: 40000 // 给足时间
+      timeout: 60000
     });
 
     const json = JSON.parse(res.data.choices[0].message.content);
     return {
       title_cn: json.title_cn || title,
-      insight: json.insight || "AI 解析中...",
-      sentiment: json.sentiment || "中立"
+      summary_cn: json.summary_cn || summary,
+      insight_cn: json.insight_cn || "分析中...",
+      insight_en: json.insight_en || "Analysis pending...",
+      sentiment: json.sentiment || "Neutral"
     };
   } catch (err) {
     console.error(`AI 分析失败: ${err.message}`);
-    return { insight: "AI 繁忙", sentiment: "中立", title_cn: title };
+    return {
+      title_cn: title,
+      summary_cn: summary,
+      insight_cn: "AI繁忙",
+      insight_en: "AI Busy",
+      sentiment: "Neutral"
+    };
   }
 }
 
@@ -176,7 +194,7 @@ async function fetchRSS(source) {
 // --- 5. 主程序 ---
 
 async function start() {
-  console.log("🚀 启动智能情报中心 4.0 (RSS矩阵版)...");
+  console.log("🚀 启动智能情报中心 5.0 (双语内核版)...");
 
   // 连接数据库
   await connectToDatabase();
@@ -201,7 +219,7 @@ async function start() {
     process.exit(0);
   }
 
-  console.log('\n🤖 开始 AI 分析...\n');
+  console.log('\n🤖 开始 AI 双语分析...\n');
 
   let successCount = 0;
   let failCount = 0;
@@ -211,10 +229,12 @@ async function start() {
     // 1. 自动分类
     item.categories = autoCategorize(item.title, item.summary);
 
-    // 2. AI 处理
+    // 2. AI 双语处理
     const ai = await analyzeNews(item.title, item.summary);
     item.title_cn = ai.title_cn;
-    item.insight = ai.insight;
+    item.summary_cn = ai.summary_cn;
+    item.insight_cn = ai.insight_cn;
+    item.insight_en = ai.insight_en;
     item.sentiment = ai.sentiment;
 
     // 3. 入库
@@ -234,7 +254,7 @@ async function start() {
   }
 
   console.log(`\n📈 任务统计: 成功 ${successCount} 篇，失败/跳过 ${failCount} 篇`);
-  console.log('\n🎉 智能情报中心 4.0 任务完成！');
+  console.log('\n🎉 智能情报中心 5.0 任务完成！');
   process.exit(0);
 }
 

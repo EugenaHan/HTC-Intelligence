@@ -23,6 +23,17 @@
         .user-btn { padding: 6px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
         .btn-login { background: var(--primary); color: white; }
 
+        /* Language Toggle */
+        .header-right { display: flex; gap: 20px; align-items: center; }
+        .lang-switch {
+            background: #f0f2f5; border-radius: 20px; padding: 4px; display: flex; gap: 4px;
+        }
+        .lang-btn {
+            border: none; background: transparent; padding: 4px 12px; border-radius: 16px;
+            font-size: 12px; font-weight: 700; color: #a0aec0; cursor: pointer; transition: 0.2s;
+        }
+        .lang-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
         /* 2. Layout */
         .layout {
             max-width: 1400px; margin: 24px auto; padding: 0 20px;
@@ -80,9 +91,9 @@
         }
 
         /* Insight Box */
-        .insight { background: #f8fafc; border-left: 3px solid #3b82f6; padding: 10px; border-radius: 0 4px 4px 0; margin-top: auto; }
-        .insight h4 { font-size: 11px; margin: 0 0 4px 0; color: #2563eb; display: flex; align-items: center; gap: 6px; }
-        .insight p { font-size: 12px; margin: 0; color: #334155; line-height: 1.4; }
+        .insight { background: linear-gradient(90deg, #eef2ff 0%, #f5f8ff 100%); border-left: 4px solid #4318ff; padding: 12px; border-radius: 0 8px 8px 0; margin-top: auto; }
+        .insight h4 { font-size: 11px; margin: 0 0 5px 0; color: #4318ff; }
+        .insight p { font-size: 12px; margin: 0; color: #2b3674; line-height: 1.5; }
 
         /* Action Bar (Checkbox + Fav) */
         .action-bar {
@@ -119,52 +130,58 @@
 
     <div class="modal" id="loginModal">
         <div class="modal-box">
-            <h3>Login</h3>
+            <h3 data-t="login_title">Login</h3>
             <input type="text" id="u" class="inp" placeholder="Username">
             <input type="password" id="p" class="inp" placeholder="Password">
-            <button class="user-btn btn-login" style="width:100%" onclick="doLogin()">Sign In</button>
+            <button class="user-btn btn-login" style="width:100%" onclick="doLogin()" data-t="login_btn">Sign In</button>
         </div>
     </div>
 
     <header>
-        <div class="logo"><i class="fas fa-chart-pie"></i> HTC Market Intelligence</div>
-        <div id="userArea">
-            <button class="user-btn btn-login" onclick="document.getElementById('loginModal').style.display='flex'">Login</button>
+        <div class="logo"><i class="fas fa-globe-asia"></i> <span data-t="brand">HTC Market Intelligence</span></div>
+        <div class="header-right">
+            <div class="lang-switch">
+                <button class="lang-btn active" onclick="setLang('cn')">中文</button>
+                <button class="lang-btn" onclick="setLang('en')">EN</button>
+            </div>
+            <div id="userArea">
+                <button class="user-btn btn-login" onclick="document.getElementById('loginModal').style.display='flex'" data-t="login">Login</button>
+            </div>
         </div>
     </header>
 
     <div class="layout">
         <div class="filters" id="filters">
-            <div style="font-size:12px; font-weight:700; color:#9ca3af; margin-right:10px;">MARKET SEGMENT:</div>
-            <button class="pill active" data-f="all">All</button>
-            <button class="pill" data-f="出境游趋势">Outbound Trend</button>
-            <button class="pill" data-f="消费趋势">Consumption</button>
-            <button class="pill" data-f="Short Haul">Short Haul</button>
-            <button class="pill" data-f="Long Haul">Long Haul</button>
-            <button class="pill fav" data-f="fav">♥ Favorites</button>
+            <div style="font-size:12px; font-weight:700; color:#9ca3af; margin-right:10px;" data-t="filter_label">MARKET SEGMENT:</div>
+            <button class="pill active" data-f="all" data-t="filter_all">All</button>
+            <button class="pill" data-f="出境游趋势" data-t="filter_trend">Outbound Trend</button>
+            <button class="pill" data-f="消费趋势" data-t="filter_consumption">Consumption</button>
+            <button class="pill" data-f="Short Haul" data-t="filter_short">Short Haul</button>
+            <button class="pill" data-f="Long Haul" data-t="filter_long">Long Haul</button>
+            <button class="pill fav" data-f="fav" data-t="filter_fav">♥ Favorites</button>
 
             <select id="monthSelect" class="month-select" onchange="applyFilters()">
-                <option value="all">📅 All Months</option>
+                <option value="all" data-t="all_months">📅 All Months</option>
             </select>
         </div>
 
         <div class="news-list" id="grid">
             <div style="grid-column:1/-1; text-align:center; padding:50px; color:#9ca3af;">
-                <i class="fas fa-spinner fa-spin"></i> Loading Intelligence...
+                <i class="fas fa-spinner fa-spin"></i> <span data-t="loading">Loading Intelligence...</span>
             </div>
         </div>
 
         <aside class="sidebar">
             <div class="panel">
-                <h3 style="margin-top:0">Executive Summary</h3>
-                <p style="font-size:13px; color:#6b7280;">Select news items (checkbox) to generate a strategic report.</p>
+                <h3 style="margin-top:0" data-t="report_title">Executive Summary</h3>
+                <p style="font-size:13px; color:#6b7280;" data-t="report_desc">Select news items (checkbox) to generate a strategic report.</p>
 
-                <div id="selectedCount" style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:10px;">
+                <div id="selectedCount" style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:10px;" data-t="selected_count">
                     0 items selected
                 </div>
 
                 <button class="gen-btn" onclick="generateReport()">
-                    <i class="fas fa-file-alt"></i> Generate Report
+                    <i class="fas fa-file-alt"></i> <span data-t="gen_btn">Generate Report</span>
                 </button>
 
                 <div id="reportOutput" style="margin-top:15px; font-family:monospace; font-size:11px; background:#f8fafc; padding:10px; border-radius:6px; max-height:400px; overflow-y:auto; display:none;"></div>
@@ -173,14 +190,93 @@
     </div>
 
     <script>
+        // 翻译字典
+        const I18N = {
+            cn: {
+                brand: "HTC 市场情报",
+                login: "登录",
+                login_title: "登录",
+                login_btn: "登录",
+                logout: "退出",
+                filter_label: "市场细分:",
+                filter_all: "全部",
+                filter_trend: "出境游趋势",
+                filter_consumption: "消费趋势",
+                filter_short: "短线市场",
+                filter_long: "长线市场",
+                filter_fav: "♥ 我的收藏",
+                all_months: "📅 全部月份",
+                loading: "正在加载全球情报...",
+                no_data: "暂无数据",
+                report_title: "高层摘要报告",
+                report_desc: "勾选新闻以生成战略报告",
+                selected_count: "已选择 0 项",
+                gen_btn: "生成报告",
+                add_report: "加入报告",
+                insight_title: "HTC 战略洞察",
+                sent_pos: "利好",
+                sent_neg: "威胁",
+                sent_neu: "中立",
+                items_selected: "已选择 {n} 项"
+            },
+            en: {
+                brand: "HTC Market Intelligence",
+                login: "Login",
+                login_title: "Login",
+                login_btn: "Sign In",
+                logout: "Logout",
+                filter_label: "MARKET SEGMENT:",
+                filter_all: "All",
+                filter_trend: "Outbound Trend",
+                filter_consumption: "Consumption",
+                filter_short: "Short Haul",
+                filter_long: "Long Haul",
+                filter_fav: "♥ Favorites",
+                all_months: "📅 All Months",
+                loading: "Loading Intelligence...",
+                no_data: "No Data Found",
+                report_title: "Executive Summary",
+                report_desc: "Select news items (checkbox) to generate a strategic report.",
+                selected_count: "0 items selected",
+                gen_btn: "Generate Report",
+                add_report: "Add to report",
+                insight_title: "HTC Strategic Insight",
+                sent_pos: "Positive",
+                sent_neg: "Threat",
+                sent_neu: "Neutral",
+                items_selected: "{n} items selected"
+            }
+        };
+
+        let CUR_LANG = 'cn'; // 默认中文
         let NEWS = [];
         let USER = JSON.parse(localStorage.getItem('htc_user'));
         let SELECTED = new Set();
 
-        window.onload = () => {
+        window.onload = async () => {
             initMonths();
             updateAuthUI();
-            fetchNews();
+            await fetchNews();
+            setLang('cn'); // 初始化为中文
+        };
+
+        // 语言切换核心逻辑
+        window.setLang = (lang) => {
+            CUR_LANG = lang;
+
+            // 1. 更新按钮状态
+            document.querySelectorAll('.lang-btn').forEach(b => {
+                b.classList.toggle('active', b.innerText.toLowerCase().includes(lang === 'cn' ? '中文' : 'en'));
+            });
+
+            // 2. 更新静态文本
+            document.querySelectorAll('[data-t]').forEach(el => {
+                const key = el.dataset.t;
+                if (I18N[lang][key]) el.innerText = I18N[lang][key];
+            });
+
+            // 3. 重新渲染列表 (切换内容语言)
+            render(document.getElementById('grid').getAttribute('data-filtered') || '[]');
         };
 
         // 初始化月份下拉框（最近6个月）
@@ -226,37 +322,40 @@
                     applyFilters();
                 }
             } catch(e) {
-                document.getElementById('grid').innerHTML = '<div style="text-align:center; padding:40px;">API Error. Please check backend.</div>';
+                document.getElementById('grid').innerHTML = `<div style="text-align:center; padding:40px;">${I18N[CUR_LANG].loading}</div>`;
             }
         }
 
-        // 2. Render Card (Corrected Tags & Checkbox)
+        // 2. Render Card (双语支持)
         function render(list) {
             const grid = document.getElementById('grid');
+            const T = I18N[CUR_LANG]; // 当前语言包
+
+            // 保存当前过滤后的列表供语言切换使用
+            grid.setAttribute('data-filtered', JSON.stringify(list));
+
             if(list.length === 0) {
-                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px;">No news found.</div>';
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px;">${T.no_data}</div>`;
                 return;
             }
 
             grid.innerHTML = list.map(item => {
-                // Summary Fallback
-                const summary = item.summary || item.description || item.snippet || 'No summary available...';
+                // 动态选择字段（根据当前语言）
+                const title = CUR_LANG === 'cn' ? (item.title_cn || item.title) : item.title;
+                const summary = CUR_LANG === 'cn' ? (item.summary_cn || item.summary || item.description || item.snippet || '暂无摘要...') : (item.summary || item.description || item.snippet || 'No summary available...');
+                const insight = CUR_LANG === 'cn' ? (item.insight_cn || item.insight || '分析中...') : (item.insight_en || item.insight || 'Analysis pending...');
 
-                // 优先显示中文标题
-                const title = item.title_cn || item.title;
+                // 情感标签翻译
+                let sentLabel = item.sentiment || 'Neutral';
+                if(sentLabel === '利好' || sentLabel === 'Positive') sentLabel = T.sent_pos;
+                if(sentLabel === '威胁' || sentLabel === 'Threat') sentLabel = T.sent_neg;
+                if(sentLabel === '中立' || sentLabel === 'Neutral') sentLabel = T.sent_neu;
 
-                // Sentiment Badge
-                let sentClass = 'neu';
-                if(item.sentiment === '利好') sentClass = 'pos';
-                if(item.sentiment === '威胁') sentClass = 'neg';
+                let sentClass = sentLabel === T.sent_pos ? 'pos' : (sentLabel === T.sent_neg ? 'neg' : 'neu');
 
-                // Categories Badge (Fix Tags)
+                // Categories Badge
                 const cats = item.categories || [];
                 const catHtml = cats.map(c => `<span class="badge trend">${c}</span>`).join('');
-
-                // Insight Text
-                let ins = item.insight;
-                if(!ins || ins === 'Pending analysis') ins = 'AI analysis pending...';
 
                 // Checkbox State
                 const checked = SELECTED.has(item._id) ? 'checked' : '';
@@ -266,7 +365,7 @@
                 <div class="${cardClass}" id="card-${item._id}" onclick="window.open('${item.url}', '_blank')">
                     <div class="card-header">
                         <div class="tags">
-                            <span class="badge ${sentClass}">${item.sentiment || 'Neutral'}</span>
+                            <span class="badge ${sentClass}">${sentLabel}</span>
                             ${catHtml}
                         </div>
                     </div>
@@ -275,14 +374,14 @@
                     <p class="card-summary">${summary}</p>
 
                     <div class="insight">
-                        <h4><i class="fas fa-lightbulb"></i> HTC Insight</h4>
-                        <p>${ins}</p>
+                        <h4><i class="fas fa-lightbulb"></i> ${T.insight_title}</h4>
+                        <p>${insight}</p>
                     </div>
 
                     <div class="action-bar" onclick="event.stopPropagation()">
                         <label class="check-group">
                             <input type="checkbox" onchange="toggleSelect('${item._id}')" ${checked}>
-                            Add to report
+                            ${T.add_report}
                         </label>
 
                         <div style="display:flex; gap:10px; align-items:center;">
@@ -307,8 +406,16 @@
             if(SELECTED.has(id)) card.classList.add('selected');
             else card.classList.remove('selected');
 
-            document.getElementById('selectedCount').innerText = `${SELECTED.size} items selected`;
+            // 更新选中数量（支持双语）
+            updateSelectedCount();
         };
+
+        // 更新选中数量显示（支持双语）
+        function updateSelectedCount() {
+            const T = I18N[CUR_LANG];
+            const count = SELECTED.size;
+            document.getElementById('selectedCount').innerText = T.items_selected.replace('{n}', count);
+        }
 
         // 4. Logic: Generate Report
         window.generateReport = async () => {
@@ -408,10 +515,11 @@
         // 7. Auth Logic
         function updateAuthUI() {
             const area = document.getElementById('userArea');
+            const T = I18N[CUR_LANG];
             if(USER) {
-                area.innerHTML = `<span style="font-size:13px; margin-right:10px;">${USER.name}</span><button class="user-btn" onclick="doLogout()" style="background:#fee2e2; color:#b91c1b;">Logout</button>`;
+                area.innerHTML = `<span style="font-size:13px; margin-right:10px;">${USER.name}</span><button class="user-btn" onclick="doLogout()" style="background:#fee2e2; color:#b91c1b;">${T.logout}</button>`;
             } else {
-                area.innerHTML = `<button class="user-btn btn-login" onclick="document.getElementById('loginModal').style.display='flex'">Login</button>`;
+                area.innerHTML = `<button class="user-btn btn-login" onclick="document.getElementById('loginModal').style.display='flex'">${T.login}</button>`;
             }
         }
 
