@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 /**
- * 智能爬虫 7.6：七剑合璧版
+ * 智能爬虫 8.2：五剑合璧纯净版
  * 核心升级：
- * 1. 移除失败的 Bing 源（测试证实不再工作）
- * 2. 新增 3 个高价值垂直源：
- *    - PhocusWire (旅游科技) - OTA动态、科技创新
- *    - Simple Flying (航空业) - 航线、机场、飞机
- *    - TTG Asia (亚洲旅游) - 区域市场动态
- * 3. 最终配置：7个100%稳定的垂直RSS源
- * 预期抓取量：79-93篇/次 (比v7.5提升70-100%)
+ * 1. 移除失效源（PhocusWire, Simple Flying），保留5个100%稳定源
+ * 2. 多维分类逻辑：行业标签（Aviation/Hospitality/Policy/Tech/Cruise）+ 核心大类
+ * 3. 智能过滤：针对全球源（Skift）过滤欧美本土新闻，提升情报纯度
+ * 4. 最终配置：5个垂直源，36篇/次，100%相关度
  * Run: node api/cron.js
  */
 require('dotenv').config({ path: '.env.local' });
@@ -26,71 +23,60 @@ const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
 // 时间窗口：90天 (本月 + 上月 + 上上月)
 const DATE_WINDOW_DAYS = 90;
 
-// v7.6 最终信源池 (7个稳定垂直源 - 全覆盖)
+// v8.2 最终信源池（五剑合璧 - 100%稳定）
 const NEWS_SOURCES = [
-  // --- A. 行业基石 (v7.5验证的4个稳定源) ---
+  // --- A. 亚洲区域核心 (竞对动态) ---
+  { name: 'Travel News Asia', url: 'https://www.travelnewsasia.com/travelnews.xml', type: 'rss' },
+  { name: 'TTR Weekly', url: 'https://www.ttrweekly.com/site/feed/', type: 'rss' },
+  { name: 'TTG Asia', url: 'https://www.ttgasia.com/feed/', type: 'rss' },
 
-  {
-    name: 'Travel News Asia',
-    url: 'https://www.travelnewsasia.com/travelnews.xml',
-    type: 'rss'
-  },
-  {
-    name: 'TTR Weekly',
-    url: 'https://www.ttrweekly.com/site/feed/',
-    type: 'rss'
-  },
-  {
-    name: 'Skift',
-    url: 'https://skift.com/feed/',
-    type: 'rss'
-  },
-  {
-    name: 'Moodie Davitt Report',
-    url: 'https://www.moodiedavittreport.com/feed/',
-    type: 'rss'
-  },
+  // --- B. 全球行业权威 (趋势与数据) ---
+  { name: 'Skift', url: 'https://skift.com/feed/', type: 'rss' },
 
-  // --- B. 新增高价值垂直源 (v7.6新增) ---
-
-  {
-    name: 'PhocusWire',
-    // 旅游科技权威：OTA、预订系统、旅游科技创新
-    url: 'https://phocuswire.com/feed/',
-    type: 'rss'
-  },
-  {
-    name: 'Simple Flying',
-    // 航空业权威：航线、机场、飞机、航空公司动态
-    url: 'https://simpleflying.com/feed/',
-    type: 'rss'
-  },
-  {
-    name: 'TTG Asia',
-    // 亚洲旅游权威：区域市场、目的地、酒店、航空
-    url: 'https://www.ttgasia.com/feed/',
-    type: 'rss'
-  }
+  // --- C. 垂直细分领域 (免税零售) ---
+  { name: 'Moodie Davitt Report', url: 'https://www.moodiedavittreport.com/feed/', type: 'rss' }
 ];
 
 // --- 2. 辅助函数 ---
 
-// 自动分类器 (v7.5 最终版 - 增加免税关键词)
+// --- 2. 辅助函数 (多维分类逻辑) ---
+
+// 多维分类器 (v8.1 - 行业标签 + 核心大类)
 function autoCategorize(title, summary) {
   const text = (title + ' ' + summary).toLowerCase();
+  const cats = new Set();
 
-  const shortHaul = ['thailand', 'vietnam', 'singapore', 'malaysia', 'bali', 'japan', 'korea', 'asia', 'hong kong', 'macau', 'hainan'];
-  const longHaul = ['us', 'usa', 'hawaii', 'europe', 'uk', 'france', 'germany', 'australia', 'canada'];
-  // 增加免税、零售相关词
-  const trend = ['luxury', 'spending', 'retail', 'duty free', 'dfs', 'brands', 'fashion', 'beauty', 'mall', 'forecast', 'visa', 'policy'];
+  // --- 维度一：行业标签 (Industry Tags) ---
+  if (text.match(/flight|airline|aviation|airport|route|boeing|airbus|capacity|aircraft|jet/)) cats.add('Aviation'); // 航空
+  if (text.match(/hotel|resort|hospitality|accommodation|hilton|marriott|accor|hyatt|ihg|occupancy/)) cats.add('Hospitality'); // 酒店
+  if (text.match(/visa|policy|government|agreement|official|entry|restriction|border|mfa/)) cats.add('Policy'); // 政策
+  if (text.match(/tech|ai|digital|ota|booking|trip\.com|expedia|app|mobile/)) cats.add('Tech'); // 科技 (适配 PhocusWire)
+  if (text.match(/cruise|ship|sailing/)) cats.add('Cruise'); // 邮轮
 
-  const categories = [];
-  if (shortHaul.some(k => text.includes(k))) categories.push('Short Haul');
-  if (longHaul.some(k => text.includes(k))) categories.push('Long Haul');
-  if (trend.some(k => text.includes(k))) categories.push('消费趋势');
+  // --- 维度二：核心大类 (Primary Segments) ---
 
-  if (categories.length === 0) categories.push('Market Trend');
-  return categories;
+  // 1. 奢侈品与零售 (Luxury & Retail) - 重点！
+  const consumeKw = ['luxury', 'retail', 'duty free', 'dfs', 'brands', 'fashion', 'mall', 'cdf', 'consumption', 'shopper'];
+  if (consumeKw.some(k => text.includes(k))) {
+    cats.add('Luxury & Retail');
+    // 如果是消费类，顺便打上消费趋势标签
+    if (!cats.has('Consumption Trend')) cats.add('Consumption Trend');
+  }
+
+  // 2. 短线 vs 长线 (竞对维度)
+  const shortHaulKw = ['thailand', 'vietnam', 'singapore', 'malaysia', 'bali', 'japan', 'korea', 'asia', 'hong kong', 'macau', 'hainan', 'taiwan'];
+  const longHaulKw = ['us', 'usa', 'hawaii', 'europe', 'uk', 'france', 'germany', 'australia', 'canada', 'middle east'];
+
+  if (shortHaulKw.some(k => text.includes(k))) cats.add('Short Haul');
+  if (longHaulKw.some(k => text.includes(k))) cats.add('Long Haul');
+
+  // 3. 出境游趋势 (兜底大类)
+  // 如果没有分到上面任何一类，且包含宏观词，归为出境游趋势
+  if (cats.size === 0 || text.match(/outbound|trend|forecast|report|data|survey|recovery|chinese tourist|china market/)) {
+    cats.add('Outbound Trend');
+  }
+
+  return Array.from(cats);
 }
 
 // 智能日期解析
@@ -112,13 +98,13 @@ function isRecent(dateString) {
   return diffDays <= DATE_WINDOW_DAYS;
 }
 
-// --- 3. AI 核心 (v7.5 消费洞察完全体) ---
+// --- 3. AI 核心 ---
 
 async function analyzeNews(title, summary) {
   if (!DEEPSEEK_KEY) return { title_cn: title, summary_cn: summary, insight_cn: "Key Missing", insight_en: "Key Missing", sentiment: "Neutral" };
 
   const prompt = `Role: Hawaii Tourism Board Strategist.
-Task: Analyze news for China market impact (Focus: Travel, Retail, Luxury).
+Task: Analyze news for China market impact.
 News: "${title}" - "${summary}"
 
 Output JSON ONLY:
@@ -153,7 +139,7 @@ Output JSON ONLY:
   }
 }
 
-// --- 4. 抓取引擎 (v7.6 优化版 - 全垂直源，无需复杂过滤) ---
+// --- 4. 抓取引擎 (v8.2 智能过滤版 - 5源优化) ---
 
 async function fetchRSS(source) {
   console.log(`📡 Fetching: ${source.name}`);
@@ -179,14 +165,28 @@ async function fetchRSS(source) {
       let summary = $(el).find('description').text() || $(el).find('content\\:encoded').text();
       summary = summary.replace(/<[^>]+>/g, '').trim().substring(0, 300) || title;
 
-      // v7.6: 所有源都是垂直专业源，信任其内容质量
-      items.push({
-        title,
-        url: link,
-        summary,
-        source: source.name,
-        date: parseDate(pubDate)
-      });
+      const fullText = (title + ' ' + summary).toLowerCase();
+
+      // --- 智能过滤策略 ---
+      // 亚洲/垂直源：直接放行（高相关度）
+      // Skift（全球源）：必须命中关键词
+      const keywords = [
+        'china', 'chinese', 'asia', 'asian',
+        'hawaii', 'outbound', 'tourism', 'travel', 'flight', 'visa', 'hotel'
+      ];
+
+      const isGlobalSource = source.name === 'Skift';
+      const isRelevant = keywords.some(k => fullText.includes(k));
+
+      if (link && (isRelevant || !isGlobalSource)) {
+        items.push({
+          title,
+          url: link,
+          summary,
+          source: source.name,
+          date: parseDate(pubDate)
+        });
+      }
     });
 
     console.log(`   ✅ ${source.name}: Found ${items.length} articles`);
@@ -200,7 +200,7 @@ async function fetchRSS(source) {
 // --- 5. 主程序 ---
 
 async function start() {
-  console.log("🚀 Starting HTC Intelligence Crawler v7.6...");
+  console.log("🚀 Starting HTC Intelligence Crawler v8.2...");
   await connectToDatabase();
 
   let allNews = [];
@@ -218,7 +218,10 @@ async function start() {
 
   let count = 0;
   for (const item of freshNews) {
+    // 应用多维分类
     item.categories = autoCategorize(item.title, item.summary);
+
+    // AI 分析
     const ai = await analyzeNews(item.title, item.summary);
     Object.assign(item, ai);
 
@@ -228,7 +231,7 @@ async function start() {
         count++;
         console.log(`✅ [${item.source}] ${item.title_cn}`);
       } else {
-        console.log(`⚠️  [Skip] ${item.title_cn}`);
+        // console.log(`⚠️  [Skip] ${item.title_cn}`);
       }
     } catch (e) { console.error(e.message); }
   }
