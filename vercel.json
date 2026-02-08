@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/htc-intelligence/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/htc-intelligence/index.html"
+    }
+  ]
+}
