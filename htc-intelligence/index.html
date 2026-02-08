@@ -101,6 +101,7 @@
                 <button class="pill" data-group="cat" data-val="Consumption Trend" data-t="cat_con">Consumption</button>
                 <button class="pill" data-group="cat" data-val="Short Haul" data-t="cat_sh">Short Haul</button>
                 <button class="pill" data-group="cat" data-val="Long Haul" data-t="cat_lh">Long Haul</button>
+                <button class="pill" data-group="cat" data-val="Macro Economy" data-t="cat_eco">Economy</button>
             </div>
 
             <div class="filter-row">
@@ -132,7 +133,7 @@
         const I18N = {
             cn: {
                 brand: "HTC 市场情报中心", lbl_cat: "市场分类:", lbl_sent: "情感筛选:",
-                all: "全部情报", cat_out: "出境游趋势", cat_con: "消费趋势", cat_sh: "短线竞对", cat_lh: "长线竞对",
+                all: "全部情报", cat_out: "出境游趋势", cat_con: "消费趋势", cat_sh: "短线竞对", cat_lh: "长线竞对", cat_eco: "宏观经济",
                 sent_pos: "利好消息", sent_neg: "威胁/警报", sent_neu: "中立", fav: "我的收藏",
                 rep_title: "高管摘要报告", rep_desc: "勾选新闻以生成战略建议", btn_gen: "生成战略报告",
                 add: "加入报告", orig: "阅读原文", insight: "HTC 战略洞察",
@@ -140,7 +141,7 @@
             },
             en: {
                 brand: "HTC Intelligence", lbl_cat: "Segment:", lbl_sent: "Sentiment:",
-                all: "All News", cat_out: "Outbound Trend", cat_con: "Consumption", cat_sh: "Short Haul", cat_lh: "Long Haul",
+                all: "All News", cat_out: "Outbound Trend", cat_con: "Consumption", cat_sh: "Short Haul", cat_lh: "Long Haul", cat_eco: "Economy",
                 sent_pos: "Positive", sent_neg: "Threat/Alert", sent_neu: "Neutral", fav: "Favorites",
                 rep_title: "Executive Summary", rep_desc: "Select items for report", btn_gen: "Generate Report",
                 add: "Add to Report", orig: "Source", insight: "HTC Insight",
@@ -295,20 +296,29 @@
             const reportBox = document.getElementById('reportOut');
             const btn = document.querySelector('.gen-btn');
 
-            reportBox.innerHTML = '<div style="text-align:center; padding:20px; color:var(--primary);"><i class="fas fa-circle-notch fa-spin"></i> Generating Strategy...</div>';
+            // 🌟 智能判断：检测是否选择了宏观经济新闻
+            const hasEconomyItems = selItems.some(n => (n.categories || []).includes('Macro Economy'));
+            const isEcoReport = hasEconomyItems && selItems.every(n => (n.categories || []).includes('Macro Economy'));
+            const apiEndpoint = isEcoReport ? '/api/report_economy' : '/api/report';
+            const reportType = isEcoReport ? "Economic Briefing" : "Strategy Report";
+
+            reportBox.innerHTML = `<div style="text-align:center; padding:30px; color:var(--primary);">
+                <i class="fas fa-circle-notch fa-spin"></i> Generating ${reportType}...</div>`;
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/report', {
+                const res = await fetch(apiEndpoint, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ items: selItems })
                 });
                 const json = await res.json();
+
                 if (json.success) {
+                    // 通用渲染逻辑
                     let html = json.report
-                        .replace(/^# (.*)/gm, '<h3 style="color:#2b3674; margin-bottom:10px;">$1</h3>')
-                        .replace(/^## (.*)/gm, '<h4 style="color:var(--primary); margin-top:15px; margin-bottom:5px;">$1</h4>')
+                        .replace(/^# (.*)/gm, '<h3 style="color:#2b3674; margin-bottom:10px; border-bottom:2px solid #eee; padding-bottom:5px;">$1</h3>')
+                        .replace(/^## (.*)/gm, '<h4 style="color:var(--primary); margin-top:20px; margin-bottom:5px;">$1</h4>')
                         .replace(/^### (.*)/gm, '<h5 style="color:#444; font-weight:800; margin-top:10px;">$1</h5>')
                         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                         .replace(/\n/g, '<br>');
