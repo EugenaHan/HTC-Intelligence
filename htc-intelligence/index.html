@@ -6,62 +6,29 @@
     <title>HTC Market Intelligence</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root { 
-            --primary: #0066cc; --bg: #f4f7fe; --text: #2b3674; 
-            --green: #05cd99; --red: #e31a1a; --gray: #a3aed0; 
+        :root {
+            --primary: #0066cc; --bg: #f4f7fe; --text: #2b3674;
+            --green: #05cd99; --red: #e31a1a; --gray: #a3aed0;
         }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
         * { box-sizing: border-box; }
-        
+
         /* Header */
         header { background: white; height: 64px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .logo { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; gap: 8px; align-items: center; }
-        
-        .user-area { display: flex; gap: 15px; align-items: center; }
-        .login-btn { 
-            background: #2b3674; color: white; border: none; padding: 8px 20px; 
-            border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; 
-            transition: 0.2s; display: flex; gap: 6px; align-items: center;
-        }
-        .login-btn:hover { background: #4318FF; }
-        .user-info { font-size: 13px; font-weight: 700; color: var(--text); display: none; align-items: center; gap: 8px; }
-
-        /* Login Modal */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000; display: none;
-            justify-content: center; align-items: center; backdrop-filter: blur(4px);
-        }
-        .login-box {
-            background: white; padding: 30px; border-radius: 20px; width: 320px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2); text-align: center;
-        }
-        .login-box h3 { margin: 0 0 20px 0; color: var(--text); }
-        .input-group { margin-bottom: 15px; text-align: left; }
-        .input-group label { display: block; font-size: 12px; font-weight: 700; color: var(--gray); margin-bottom: 5px; }
-        .input-group input { 
-            width: 100%; padding: 10px; border: 1px solid #e0e5f2; border-radius: 10px; outline: none; transition: 0.2s;
-        }
-        .input-group input:focus { border-color: var(--primary); }
-        .submit-btn {
-            width: 100%; background: var(--primary); color: white; padding: 12px;
-            border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 10px;
-        }
-        .submit-btn:hover { background: #0052cc; }
-        .error-msg { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
 
         /* Layout & Controls */
         .layout { max-width: 1400px; margin: 24px auto; display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 0 20px; }
         .controls { grid-column: 1/-1; background: white; padding: 20px 25px; border-radius: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        
+
         .counter-box { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--text); border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 5px;}
         .filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .filter-label { font-size: 12px; font-weight: 700; color: var(--gray); text-transform: uppercase; min-width: 85px; }
-        
+
         .pill { border: 1px solid #e0e5f2; background: white; padding: 8px 16px; border-radius: 30px; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; transition: 0.2s; }
         .pill:hover { border-color: var(--primary); color: var(--primary); background: #f8faff; }
         .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
-        
+
         .pill.pos.active { background: var(--green); border-color: var(--green); }
         .pill.neg.active { background: var(--red); border-color: var(--red); }
         .pill.fav.active { background: #ff5b5b; color: white; border-color: #ff5b5b; }
@@ -85,7 +52,7 @@
 
         .card-title { font-size: 16px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.5; color: #1B2559; }
         .card-summary { font-size: 13px; color: #707EAE; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1; }
-        
+
         .insight { background: linear-gradient(90deg, #F4F7FE 0%, #ffffff 100%); border-left: 4px solid var(--primary); padding: 12px; border-radius: 0 8px 8px 0; margin-top: 15px; }
         .insight h4 { margin: 0 0 5px 0; font-size: 11px; color: var(--primary); text-transform: uppercase; }
         .insight p { margin: 0; font-size: 12px; color: #2B3674; font-weight: 500; }
@@ -97,7 +64,7 @@
         .panel { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
         .gen-btn { width: 100%; background: var(--primary); color: white; padding: 14px; border-radius: 12px; border: none; font-weight: 700; margin-top: 20px; cursor: pointer; transition: 0.2s; }
         .gen-btn:hover { background: #0052cc; transform: translateY(-2px); }
-        
+
         .lang-btn { border: none; background: transparent; padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; color: #a0aec0; cursor: pointer; }
         .lang-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
@@ -107,40 +74,14 @@
 <body>
     <header>
         <div class="logo">
-            <i class="fas fa-radar" style="color:var(--primary)"></i> 
+            <i class="fas fa-radar" style="color:var(--primary)"></i>
             <span data-t="brand">HTC Intelligence</span>
         </div>
-        <div class="user-area">
-            <div style="background:#f4f7fe; padding:4px; border-radius:20px; display:flex;">
-                <button class="lang-btn active" onclick="setLang('cn')">中</button>
-                <button class="lang-btn" onclick="setLang('en')">EN</button>
-            </div>
-            <button id="loginBtn" class="login-btn" onclick="showLoginModal()">
-                <i class="fas fa-lock"></i> Login
-            </button>
-            <div id="userInfo" class="user-info">
-                <span><i class="fas fa-user-check"></i> Hawaii Team</span>
-                <i class="fas fa-sign-out-alt" onclick="handleLogout()" style="cursor:pointer; color:var(--gray); margin-left:8px;" title="Logout"></i>
-            </div>
+        <div style="background:#f4f7fe; padding:4px; border-radius:20px; display:flex;">
+            <button class="lang-btn active" onclick="setLang('cn')">中</button>
+            <button class="lang-btn" onclick="setLang('en')">EN</button>
         </div>
     </header>
-
-    <div id="loginModal" class="modal-overlay">
-        <div class="login-box">
-            <h3>HTC Team Login</h3>
-            <div class="input-group">
-                <label>Username</label>
-                <input type="text" id="username" placeholder="Enter username">
-            </div>
-            <div class="input-group">
-                <label>Password</label>
-                <input type="password" id="password" placeholder="Enter password">
-            </div>
-            <button class="submit-btn" onclick="submitLogin()">Access Intelligence</button>
-            <div id="loginError" class="error-msg">Incorrect credentials</div>
-            <div style="margin-top:15px; font-size:11px; color:#aaa; cursor:pointer;" onclick="closeLoginModal()">Cancel</div>
-        </div>
-    </div>
 
     <div class="layout">
         <div class="controls">
@@ -210,64 +151,16 @@
         let CUR_LANG = 'cn';
         let NEWS = [], FILTERED = [], SELECTED = new Set();
         let FILTERS = { cat: 'all', sent: 'all', month: 'all', fav: false };
-        let USER = localStorage.getItem('htc_user_token'); 
         let FAVS = JSON.parse(localStorage.getItem('htc_favs') || '[]');
 
-        window.onload = async () => { 
-            checkLogin();
-            initMonths(); 
-            await fetchNews(); 
-            setLang('cn'); 
-        };
-
-        function checkLogin() {
-            if (USER === 'verified') {
-                document.getElementById('loginBtn').style.display = 'none';
-                document.getElementById('userInfo').style.display = 'flex';
-            } else {
-                document.getElementById('loginBtn').style.display = 'flex';
-                document.getElementById('userInfo').style.display = 'none';
-            }
-        }
-
-        window.showLoginModal = () => {
-            document.getElementById('loginModal').style.display = 'flex';
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-            document.getElementById('loginError').style.display = 'none';
-        }
-
-        window.closeLoginModal = () => {
-            document.getElementById('loginModal').style.display = 'none';
-        }
-
-        window.submitLogin = () => {
-            const u = document.getElementById('username').value;
-            const p = document.getElementById('password').value;
-            if (u === 'Hawaii' && p === 'Hawaii2026') {
-                localStorage.setItem('htc_user_token', 'verified');
-                USER = 'verified';
-                checkLogin();
-                closeLoginModal();
-                alert('Access Granted. Welcome, HTC Team.');
-            } else {
-                document.getElementById('loginError').style.display = 'block';
-            }
-        }
-
-        window.handleLogout = () => {
-            if(confirm('Log out from HTC Intelligence?')) {
-                localStorage.removeItem('htc_user_token');
-                USER = null;
-                checkLogin();
-                window.location.reload();
-            }
+        window.onload = async () => {
+            initMonths();
+            await fetchNews();
+            setLang('cn');
         };
 
         window.toggleHeart = (e, id) => {
             e.stopPropagation();
-            if (!USER) { showLoginModal(); return; }
-            
             if (FAVS.includes(id)) {
                 FAVS = FAVS.filter(fid => fid !== id);
             } else {
@@ -292,11 +185,11 @@
             try {
                 const res = await fetch('/api/news');
                 const json = await res.json();
-                if (json.success) {
-                    NEWS = json.data.sort((a,b) => new Date(b.date) - new Date(a.date));
-                    applyFilters();
-                }
-            } catch(e) {}
+                NEWS = Array.isArray(json) ? json.sort((a,b) => new Date(b.date) - new Date(a.date)) : [];
+                applyFilters();
+            } catch(e) {
+                console.error('Failed to fetch news:', e);
+            }
         }
 
         function applyFilters() {
@@ -324,7 +217,7 @@
                 const title = CUR_LANG==='cn' ? (item.title_cn||item.title) : item.title;
                 const summary = CUR_LANG==='cn' ? (item.summary_cn||item.summary) : item.summary;
                 const insight = CUR_LANG==='cn' ? (item.insight_cn||item.insight) : (item.insight_en||item.insight);
-                
+
                 const s = (item.sentiment || '').toLowerCase();
                 let color = 'neu', label = T.sent_neu;
                 if (s.includes('neg') || s.includes('threat') || s.includes('威胁')) { color='neg'; label=T.sent_neg; }
@@ -341,7 +234,7 @@
                 return `
                 <div class="card ${SELECTED.has(item._id)?'selected':''}" onclick="window.open('${item.url}')">
                     <i class="${heartClass} fav-icon" style="${heartStyle}" onclick="toggleHeart(event, '${item._id}')"></i>
-                    
+
                     <div class="tags-row">
                         <span class="tag ${color}">${label}</span>
                         ${tags}
@@ -374,7 +267,6 @@
         });
 
         window.toggleFavFilter = (btn) => {
-            if (!USER) { showLoginModal(); return; }
             FILTERS.fav = !FILTERS.fav;
             btn.classList.toggle('active');
             applyFilters();
@@ -387,20 +279,19 @@
             render(FILTERED);
         };
 
-        window.toggleSel = (id) => { 
+        window.toggleSel = (id) => {
             if(SELECTED.has(id)) SELECTED.delete(id); else SELECTED.add(id);
             document.getElementById('selCount').innerText = `${SELECTED.size} items`;
             render(FILTERED);
         };
-        
+
         window.generateReport = async () => {
-            if (!USER) { showLoginModal(); return; }
             const selItems = NEWS.filter(n => SELECTED.has(n._id));
             if(selItems.length === 0) { alert('Please select news first!'); return; }
-            
+
             const reportBox = document.getElementById('reportOut');
             const btn = document.querySelector('.gen-btn');
-            
+
             reportBox.innerHTML = '<div style="text-align:center; padding:20px; color:var(--primary);"><i class="fas fa-circle-notch fa-spin"></i> Generating Strategy...</div>';
             btn.disabled = true;
 
