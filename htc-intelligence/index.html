@@ -341,12 +341,65 @@
             render(FILTERED);
         };
 
-        // 简易报告生成
-        window.generateReport = () => {
+        // 战略报告生成 (调用后端 AI)
+        window.generateReport = async () => {
+            // 1. 获取选中新闻
             const selItems = NEWS.filter(n => SELECTED.has(n._id));
-            if(selItems.length === 0) { alert('Please select news first!'); return; }
-            const text = selItems.map(n => `- ${n.title_cn || n.title}\n  Insight: ${n.insight_cn || n.insight}`).join('\n\n');
-            document.getElementById('reportOut').innerText = "Generating Strategy...\n\n" + text;
+
+            if(selItems.length === 0) {
+                alert('请先勾选新闻 (Please select news first)');
+                return;
+            }
+
+            const reportBox = document.getElementById('reportOut');
+            const btn = document.querySelector('.gen-btn');
+
+            // 2. 显示"正在思考"动画
+            reportBox.innerHTML = `
+                <div style="text-align:center; padding:30px; color:var(--primary);">
+                    <i class="fas fa-circle-notch fa-spin" style="font-size:24px;"></i>
+                    <div style="margin-top:10px; font-weight:bold;">Generating Strategy...</div>
+                    <div style="font-size:12px; color:#aaa; margin-top:5px;">Analyzing Competitors (Short/Long Haul) & Consumer Trends</div>
+                </div>
+            `;
+            btn.disabled = true;
+            btn.style.opacity = 0.7;
+
+            try {
+                // 3. 调用后端 api/report.js
+                const res = await fetch('/api/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: selItems })
+                });
+
+                const json = await res.json();
+
+                if (json.success) {
+                    // 4. 渲染 Markdown (美化版)
+                    let html = json.report
+                        // 处理标题
+                        .replace(/^# (.*$)/gim, '<h1 style="font-size:18px; color:#2b3674; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:15px;">$1</h1>')
+                        .replace(/^## (.*$)/gim, '<h2 style="font-size:15px; color:var(--primary); margin-top:20px; margin-bottom:10px;">$1</h2>')
+                        .replace(/^### (.*$)/gim, '<h3 style="font-size:13px; color:#444; font-weight:800; margin-top:15px; margin-bottom:5px;">$1</h3>')
+                        // 处理加粗
+                        .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#2b3674;">$1</strong>')
+                        // 处理列表
+                        .replace(/^\- (.*$)/gim, '<li style="margin-left:20px; margin-bottom:4px;">$1</li>')
+                        // 处理换行
+                        .replace(/\n/g, '<br>');
+
+                    reportBox.innerHTML = `<div style="line-height:1.6; font-family:'Segoe UI', sans-serif; font-size:13px; color:#333;">${html}</div>`;
+                } else {
+                    reportBox.innerText = "Error: Report generation failed.";
+                }
+            } catch (e) {
+                console.error(e);
+                reportBox.innerText = "Network Error. Please try again.";
+            } finally {
+                btn.disabled = false;
+                btn.style.opacity = 1;
+            }
         };
     </script>
 </body>
