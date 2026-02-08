@@ -6,104 +6,98 @@
     <title>HTC Market Intelligence</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary: #0066cc;
-            --bg: #f4f7fe;
-            --text: #2b3674;
-            --green: #05cd99;
-            --red: #e31a1a;
-            --gray: #a3aed0;
+        :root { 
+            --primary: #0066cc; --bg: #f4f7fe; --text: #2b3674; 
+            --green: #05cd99; --red: #e31a1a; --gray: #a3aed0; 
         }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
         * { box-sizing: border-box; }
-
-        /* 顶部导航 */
+        
+        /* Header */
         header { background: white; height: 64px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .logo { font-size: 20px; font-weight: 800; color: var(--primary); display: flex; gap: 8px; align-items: center; }
-
-        /* 主布局 */
-        .layout { max-width: 1400px; margin: 24px auto; display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 0 20px; }
-
-        /* --- 核心升级：高管仪表盘控制台 --- */
-        .controls {
-            grid-column: 1/-1;
-            background: white;
-            padding: 20px 25px;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        
+        .user-area { display: flex; gap: 15px; align-items: center; }
+        .login-btn { 
+            background: #2b3674; color: white; border: none; padding: 8px 20px; 
+            border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; 
+            transition: 0.2s; display: flex; gap: 6px; align-items: center;
         }
+        .login-btn:hover { background: #4318FF; }
+        .user-info { font-size: 13px; font-weight: 700; color: var(--text); display: none; align-items: center; gap: 8px; }
 
-        /* 1. 计数器行 */
+        /* Login Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; display: none;
+            justify-content: center; align-items: center; backdrop-filter: blur(4px);
+        }
+        .login-box {
+            background: white; padding: 30px; border-radius: 20px; width: 320px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); text-align: center;
+        }
+        .login-box h3 { margin: 0 0 20px 0; color: var(--text); }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 12px; font-weight: 700; color: var(--gray); margin-bottom: 5px; }
+        .input-group input { 
+            width: 100%; padding: 10px; border: 1px solid #e0e5f2; border-radius: 10px; outline: none; transition: 0.2s;
+        }
+        .input-group input:focus { border-color: var(--primary); }
+        .submit-btn {
+            width: 100%; background: var(--primary); color: white; padding: 12px;
+            border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 10px;
+        }
+        .submit-btn:hover { background: #0052cc; }
+        .error-msg { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
+
+        /* Layout & Controls */
+        .layout { max-width: 1400px; margin: 24px auto; display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 0 20px; }
+        .controls { grid-column: 1/-1; background: white; padding: 20px 25px; border-radius: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        
         .counter-box { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--text); border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 5px;}
-        .count-badge { background: #eef2ff; color: var(--primary); padding: 4px 10px; border-radius: 6px; font-size: 14px; font-weight: 800; }
-
-        /* 2. 筛选行 */
         .filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .filter-label { font-size: 12px; font-weight: 700; color: var(--gray); text-transform: uppercase; min-width: 85px; }
-
-        /* 按钮 Pills */
-        .pill {
-            border: 1px solid #e0e5f2;
-            background: white;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-            cursor: pointer;
-            transition: 0.2s;
-        }
+        
+        .pill { border: 1px solid #e0e5f2; background: white; padding: 8px 16px; border-radius: 30px; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; transition: 0.2s; }
         .pill:hover { border-color: var(--primary); color: var(--primary); background: #f8faff; }
-
-        /* 激活状态：普通 Tab */
-        .pill.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(0,102,204,0.2); }
-
-        /* 激活状态：利好 (绿) */
-        .pill.pos { color: var(--green); border-color: #e0fbf4; }
-        .pill.pos.active { background: var(--green); color: white; border-color: var(--green); box-shadow: 0 4px 10px rgba(5,205,153,0.2); }
-
-        /* 激活状态：威胁 (红) */
-        .pill.neg { color: var(--red); border-color: #ffe5e5; }
-        .pill.neg.active { background: var(--red); color: white; border-color: var(--red); box-shadow: 0 4px 10px rgba(227,26,26,0.2); }
-
-        /* 激活状态：收藏 (粉) */
+        .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        .pill.pos.active { background: var(--green); border-color: var(--green); }
+        .pill.neg.active { background: var(--red); border-color: var(--red); }
         .pill.fav.active { background: #ff5b5b; color: white; border-color: #ff5b5b; }
 
-        /* --- 卡片设计 --- */
+        /* Cards */
         .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         .card { background: white; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: 0.2s; cursor: pointer; border: 2px solid transparent; position: relative; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
         .card.selected { border-color: var(--primary); background: #f4faff; }
 
-        /* 标签行 */
-        .tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
-        .tag { font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-        .tag.industry { background: #E6F0FF; color: #0052cc; }
+        .fav-icon { position: absolute; top: 20px; right: 20px; font-size: 18px; color: #e0e5f2; cursor: pointer; transition: 0.2s; z-index: 10; }
+        .fav-icon:hover { transform: scale(1.2); }
+        .fav-icon.active { color: #ff5b5b; }
 
-        /* 情感标签颜色 */
-        .tag.pos { background: #E6F7F1; color: #00B69B; } /* 绿底绿字 */
-        .tag.neg { background: #FFF0F0; color: #E31A1A; } /* 红底红字 */
-        .tag.neu { background: #F4F7FE; color: #858D9D; } /* 灰底灰字 */
+        .tags-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; padding-right: 30px; }
+        .tag { font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: 800; text-transform: uppercase; }
+        .tag.industry { background: #E6F0FF; color: #0052cc; }
+        .tag.pos { background: #E6F7F1; color: #00B69B; }
+        .tag.neg { background: #FFF0F0; color: #E31A1A; }
+        .tag.neu { background: #F4F7FE; color: #858D9D; }
 
         .card-title { font-size: 16px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.5; color: #1B2559; }
         .card-summary { font-size: 13px; color: #707EAE; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1; }
-
+        
         .insight { background: linear-gradient(90deg, #F4F7FE 0%, #ffffff 100%); border-left: 4px solid var(--primary); padding: 12px; border-radius: 0 8px 8px 0; margin-top: 15px; }
-        .insight h4 { margin: 0 0 5px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); }
+        .insight h4 { margin: 0 0 5px 0; font-size: 11px; color: var(--primary); text-transform: uppercase; }
         .insight p { margin: 0; font-size: 12px; color: #2B3674; font-weight: 500; }
 
         .footer { margin-top: 15px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f0f0; padding-top: 10px; font-size: 11px; color: #A3AED0; }
 
-        /* Sidebar & Lang */
+        /* Sidebar */
         .sidebar { position: sticky; top: 100px; height: fit-content; }
         .panel { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        .gen-btn { width: 100%; background: var(--primary); color: white; padding: 14px; border-radius: 12px; border: none; font-weight: 700; margin-top: 20px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,102,204,0.3); }
+        .gen-btn { width: 100%; background: var(--primary); color: white; padding: 14px; border-radius: 12px; border: none; font-weight: 700; margin-top: 20px; cursor: pointer; transition: 0.2s; }
         .gen-btn:hover { background: #0052cc; transform: translateY(-2px); }
-
-        .lang-switch { background: #f4f7fe; padding: 4px; border-radius: 20px; display: flex; }
+        
         .lang-btn { border: none; background: transparent; padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; color: #a0aec0; cursor: pointer; }
         .lang-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
@@ -113,20 +107,46 @@
 <body>
     <header>
         <div class="logo">
-            <i class="fas fa-radar" style="color:var(--primary)"></i>
+            <i class="fas fa-radar" style="color:var(--primary)"></i> 
             <span data-t="brand">HTC Intelligence</span>
         </div>
-        <div class="lang-switch">
-            <button class="lang-btn active" onclick="setLang('cn')">中文</button>
-            <button class="lang-btn" onclick="setLang('en')">EN</button>
+        <div class="user-area">
+            <div style="background:#f4f7fe; padding:4px; border-radius:20px; display:flex;">
+                <button class="lang-btn active" onclick="setLang('cn')">中</button>
+                <button class="lang-btn" onclick="setLang('en')">EN</button>
+            </div>
+            <button id="loginBtn" class="login-btn" onclick="showLoginModal()">
+                <i class="fas fa-lock"></i> Login
+            </button>
+            <div id="userInfo" class="user-info">
+                <span><i class="fas fa-user-check"></i> Hawaii Team</span>
+                <i class="fas fa-sign-out-alt" onclick="handleLogout()" style="cursor:pointer; color:var(--gray); margin-left:8px;" title="Logout"></i>
+            </div>
         </div>
     </header>
+
+    <div id="loginModal" class="modal-overlay">
+        <div class="login-box">
+            <h3>HTC Team Login</h3>
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="Enter username">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter password">
+            </div>
+            <button class="submit-btn" onclick="submitLogin()">Access Intelligence</button>
+            <div id="loginError" class="error-msg">Incorrect credentials</div>
+            <div style="margin-top:15px; font-size:11px; color:#aaa; cursor:pointer;" onclick="closeLoginModal()">Cancel</div>
+        </div>
+    </div>
 
     <div class="layout">
         <div class="controls">
             <div class="counter-box">
                 <i class="fas fa-chart-pie" style="color:var(--primary)"></i>
-                <span id="counterText">Loading data...</span>
+                <span id="counterText">Loading...</span>
                 <div style="flex-grow:1"></div>
                 <select id="monthSelect" style="padding:6px 12px; border-radius:8px; border:1px solid #e0e0e0; outline:none; font-size:12px; background:#f9f9f9; cursor:pointer;">
                     <option value="all">📅 All Time</option>
@@ -134,7 +154,7 @@
             </div>
 
             <div class="filter-row">
-                <span class="filter-label" data-t="lbl_cat">Category:</span>
+                <span class="filter-label" data-t="lbl_cat">Segment:</span>
                 <button class="pill active" data-group="cat" data-val="all" data-t="all">All News</button>
                 <button class="pill" data-group="cat" data-val="Outbound Trend" data-t="cat_out">Outbound Trend</button>
                 <button class="pill" data-group="cat" data-val="Consumption Trend" data-t="cat_con">Consumption</button>
@@ -161,7 +181,6 @@
                 <h3 data-t="rep_title">Executive Summary</h3>
                 <p data-t="rep_desc" style="font-size:13px; color:var(--gray);">Select items to generate report.</p>
                 <div id="selCount" style="color:var(--primary); font-weight:800; font-size:18px; margin:15px 0;">0 items</div>
-                <div style="height:1px; background:#f0f0f0; margin-bottom:15px;"></div>
                 <div id="reportOut" style="font-size:12px; color:#555; white-space:pre-wrap; max-height:300px; overflow-y:auto;"></div>
                 <button class="gen-btn" onclick="generateReport()" data-t="btn_gen">Generate Report</button>
             </div>
@@ -169,37 +188,94 @@
     </div>
 
     <script>
-        // 翻译字典
         const I18N = {
             cn: {
-                brand: "HTC 市场情报中心",
-                lbl_cat: "市场分类:", lbl_sent: "情感筛选:",
-                all: "全部情报",
-                cat_out: "出境游趋势", cat_con: "消费趋势", cat_sh: "短线竞对", cat_lh: "长线竞对",
+                brand: "HTC 市场情报中心", lbl_cat: "市场分类:", lbl_sent: "情感筛选:",
+                all: "全部情报", cat_out: "出境游趋势", cat_con: "消费趋势", cat_sh: "短线竞对", cat_lh: "长线竞对",
                 sent_pos: "利好消息", sent_neg: "威胁/警报", sent_neu: "中立", fav: "我的收藏",
-                rep_title: "高管摘要报告", rep_desc: "勾选新闻以生成战略报告", btn_gen: "生成报告",
-                add: "加入报告", orig: "来源", insight: "HTC 洞察",
-                count_fmt: "总计 {total} 条，显示 <span class='count-badge'>{shown}</span> 条",
-                loading: "正在连接情报中心..."
+                rep_title: "高管摘要报告", rep_desc: "勾选新闻以生成战略建议", btn_gen: "生成战略报告",
+                add: "加入报告", orig: "阅读原文", insight: "HTC 战略洞察",
+                count_fmt: "情报库共 {total} 条，当前筛选显示 <span class='count-badge'>{shown}</span> 条"
             },
             en: {
-                brand: "HTC Intelligence",
-                lbl_cat: "Category:", lbl_sent: "Sentiment:",
-                all: "All News",
-                cat_out: "Outbound Trend", cat_con: "Consumption", cat_sh: "Short Haul", cat_lh: "Long Haul",
+                brand: "HTC Intelligence", lbl_cat: "Segment:", lbl_sent: "Sentiment:",
+                all: "All News", cat_out: "Outbound Trend", cat_con: "Consumption", cat_sh: "Short Haul", cat_lh: "Long Haul",
                 sent_pos: "Positive", sent_neg: "Threat/Alert", sent_neu: "Neutral", fav: "Favorites",
                 rep_title: "Executive Summary", rep_desc: "Select items for report", btn_gen: "Generate Report",
                 add: "Add to Report", orig: "Source", insight: "HTC Insight",
-                count_fmt: "Total {total} items, showing <span class='count-badge'>{shown}</span>",
-                loading: "Loading Intelligence..."
+                count_fmt: "Total {total} items, showing <span class='count-badge'>{shown}</span>"
             }
         };
 
         let CUR_LANG = 'cn';
         let NEWS = [], FILTERED = [], SELECTED = new Set();
         let FILTERS = { cat: 'all', sent: 'all', month: 'all', fav: false };
+        let USER = localStorage.getItem('htc_user_token'); 
+        let FAVS = JSON.parse(localStorage.getItem('htc_favs') || '[]');
 
-        window.onload = async () => { initMonths(); await fetchNews(); setLang('cn'); };
+        window.onload = async () => { 
+            checkLogin();
+            initMonths(); 
+            await fetchNews(); 
+            setLang('cn'); 
+        };
+
+        function checkLogin() {
+            if (USER === 'verified') {
+                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'flex';
+            } else {
+                document.getElementById('loginBtn').style.display = 'flex';
+                document.getElementById('userInfo').style.display = 'none';
+            }
+        }
+
+        window.showLoginModal = () => {
+            document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        window.closeLoginModal = () => {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        window.submitLogin = () => {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if (u === 'Hawaii' && p === 'Hawaii2026') {
+                localStorage.setItem('htc_user_token', 'verified');
+                USER = 'verified';
+                checkLogin();
+                closeLoginModal();
+                alert('Access Granted. Welcome, HTC Team.');
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        window.handleLogout = () => {
+            if(confirm('Log out from HTC Intelligence?')) {
+                localStorage.removeItem('htc_user_token');
+                USER = null;
+                checkLogin();
+                window.location.reload();
+            }
+        };
+
+        window.toggleHeart = (e, id) => {
+            e.stopPropagation();
+            if (!USER) { showLoginModal(); return; }
+            
+            if (FAVS.includes(id)) {
+                FAVS = FAVS.filter(fid => fid !== id);
+            } else {
+                FAVS.push(id);
+            }
+            localStorage.setItem('htc_favs', JSON.stringify(FAVS));
+            applyFilters();
+        };
 
         function initMonths() {
             const sel = document.getElementById('monthSelect');
@@ -225,30 +301,16 @@
 
         function applyFilters() {
             FILTERED = NEWS.filter(n => {
-                // 1. 收藏过滤
-                if (FILTERS.fav) return n.isFavorite;
-
-                // 2. 核心分类过滤 (Tab)
+                if (FILTERS.fav) return FAVS.includes(n._id);
                 const cats = (n.categories || []).join('|');
-                let catMatch = FILTERS.cat === 'all';
-                if (!catMatch) {
-                    // 如果新闻包含该大类标签，或者属于该大类的子集
-                    catMatch = cats.includes(FILTERS.cat);
-                }
-
-                // 3. 情感过滤
+                let catMatch = FILTERS.cat === 'all' || cats.includes(FILTERS.cat);
                 const s = (n.sentiment || '').toLowerCase();
                 let sentMatch = FILTERS.sent === 'all';
                 if (!sentMatch) {
-                    if (FILTERS.sent === 'pos') sentMatch = s.includes('positive') || s.includes('利好');
-                    else if (FILTERS.sent === 'neg') sentMatch = s.includes('negative') || s.includes('threat') || s.includes('威胁');
-                    // 默认其他为中立，暂不严卡中立
+                    if (FILTERS.sent === 'pos') sentMatch = s.includes('pos') || s.includes('利好');
+                    else if (FILTERS.sent === 'neg') sentMatch = s.includes('neg') || s.includes('threat') || s.includes('威胁');
                 }
-
-                // 4. 月份过滤
-                const monthMatch = FILTERS.month === 'all' ||
-                    (n.date && n.date.substring(0, 7) === FILTERS.month);
-
+                let monthMatch = FILTERS.month === 'all' || n.date.startsWith(FILTERS.month);
                 return catMatch && sentMatch && monthMatch;
             });
             render(FILTERED);
@@ -256,35 +318,30 @@
 
         function render(list) {
             const T = I18N[CUR_LANG];
+            document.getElementById('counterText').innerHTML = T.count_fmt.replace('{total}', NEWS.length).replace('{shown}', list.length);
 
-            // 更新计数器
-            const counterHtml = T.count_fmt.replace('{total}', NEWS.length).replace('{shown}', list.length);
-            document.getElementById('counterText').innerHTML = counterHtml;
-
-            const grid = document.getElementById('grid');
-            if(list.length === 0) {
-                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px;">${T.loading}</div>`;
-                return;
-            }
-
-            grid.innerHTML = list.map(item => {
+            document.getElementById('grid').innerHTML = list.map(item => {
                 const title = CUR_LANG==='cn' ? (item.title_cn||item.title) : item.title;
                 const summary = CUR_LANG==='cn' ? (item.summary_cn||item.summary) : item.summary;
                 const insight = CUR_LANG==='cn' ? (item.insight_cn||item.insight) : (item.insight_en||item.insight);
-
-                // 情感颜色判定 (强制修复白色问题)
+                
                 const s = (item.sentiment || '').toLowerCase();
                 let color = 'neu', label = T.sent_neu;
                 if (s.includes('neg') || s.includes('threat') || s.includes('威胁')) { color='neg'; label=T.sent_neg; }
                 else if (s.includes('pos') || s.includes('利好')) { color='pos'; label=T.sent_pos; }
 
-                // 行业标签 (Industry Tags) - 过滤掉大类标签，只留细分
                 const bigCats = ['Short Haul', 'Long Haul', 'Consumption Trend', 'Outbound Trend', 'Market Trend'];
                 const tags = (item.categories||[]).filter(c => !bigCats.includes(c)).slice(0,3)
                     .map(c => `<span class="tag industry">${c}</span>`).join('');
 
+                const isFav = FAVS.includes(item._id);
+                const heartClass = isFav ? 'fas fa-heart active' : 'far fa-heart';
+                const heartStyle = isFav ? 'color:#ff5b5b;' : '';
+
                 return `
                 <div class="card ${SELECTED.has(item._id)?'selected':''}" onclick="window.open('${item.url}')">
+                    <i class="${heartClass} fav-icon" style="${heartStyle}" onclick="toggleHeart(event, '${item._id}')"></i>
+                    
                     <div class="tags-row">
                         <span class="tag ${color}">${label}</span>
                         ${tags}
@@ -305,24 +362,19 @@
             }).join('');
         }
 
-        // 按钮点击逻辑
         document.querySelectorAll('.pill').forEach(btn => {
-            if(btn.dataset.group === 'fav') return; // 收藏按钮单独处理
+            if(btn.dataset.group === 'fav') return;
             btn.onclick = (e) => {
                 const group = e.target.dataset.group;
-                const val = e.target.dataset.val;
-                // 记录状态
-                FILTERS[group] = val;
-
-                // UI 切换 (同组互斥)
+                FILTERS[group] = e.target.dataset.val;
                 document.querySelectorAll(`.pill[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
-
                 applyFilters();
             };
         });
 
         window.toggleFavFilter = (btn) => {
+            if (!USER) { showLoginModal(); return; }
             FILTERS.fav = !FILTERS.fav;
             btn.classList.toggle('active');
             applyFilters();
@@ -335,71 +387,41 @@
             render(FILTERED);
         };
 
-        window.toggleSel = (id) => {
+        window.toggleSel = (id) => { 
             if(SELECTED.has(id)) SELECTED.delete(id); else SELECTED.add(id);
             document.getElementById('selCount').innerText = `${SELECTED.size} items`;
             render(FILTERED);
         };
-
-        // 战略报告生成 (调用后端 AI)
+        
         window.generateReport = async () => {
-            // 1. 获取选中新闻
+            if (!USER) { showLoginModal(); return; }
             const selItems = NEWS.filter(n => SELECTED.has(n._id));
-
-            if(selItems.length === 0) {
-                alert('请先勾选新闻 (Please select news first)');
-                return;
-            }
-
+            if(selItems.length === 0) { alert('Please select news first!'); return; }
+            
             const reportBox = document.getElementById('reportOut');
             const btn = document.querySelector('.gen-btn');
-
-            // 2. 显示"正在思考"动画
-            reportBox.innerHTML = `
-                <div style="text-align:center; padding:30px; color:var(--primary);">
-                    <i class="fas fa-circle-notch fa-spin" style="font-size:24px;"></i>
-                    <div style="margin-top:10px; font-weight:bold;">Generating Strategy...</div>
-                    <div style="font-size:12px; color:#aaa; margin-top:5px;">Analyzing Competitors (Short/Long Haul) & Consumer Trends</div>
-                </div>
-            `;
+            
+            reportBox.innerHTML = '<div style="text-align:center; padding:20px; color:var(--primary);"><i class="fas fa-circle-notch fa-spin"></i> Generating Strategy...</div>';
             btn.disabled = true;
-            btn.style.opacity = 0.7;
 
             try {
-                // 3. 调用后端 api/report.js
                 const res = await fetch('/api/report', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ items: selItems })
                 });
-
                 const json = await res.json();
-
                 if (json.success) {
-                    // 4. 渲染 Markdown (美化版)
                     let html = json.report
-                        // 处理标题
-                        .replace(/^# (.*$)/gim, '<h1 style="font-size:18px; color:#2b3674; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:15px;">$1</h1>')
-                        .replace(/^## (.*$)/gim, '<h2 style="font-size:15px; color:var(--primary); margin-top:20px; margin-bottom:10px;">$1</h2>')
-                        .replace(/^### (.*$)/gim, '<h3 style="font-size:13px; color:#444; font-weight:800; margin-top:15px; margin-bottom:5px;">$1</h3>')
-                        // 处理加粗
-                        .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#2b3674;">$1</strong>')
-                        // 处理列表
-                        .replace(/^\- (.*$)/gim, '<li style="margin-left:20px; margin-bottom:4px;">$1</li>')
-                        // 处理换行
+                        .replace(/^# (.*)/gm, '<h3 style="color:#2b3674; margin-bottom:10px;">$1</h3>')
+                        .replace(/^## (.*)/gm, '<h4 style="color:var(--primary); margin-top:15px; margin-bottom:5px;">$1</h4>')
+                        .replace(/^### (.*)/gm, '<h5 style="color:#444; font-weight:800; margin-top:10px;">$1</h5>')
+                        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                         .replace(/\n/g, '<br>');
-
-                    reportBox.innerHTML = `<div style="line-height:1.6; font-family:'Segoe UI', sans-serif; font-size:13px; color:#333;">${html}</div>`;
-                } else {
-                    reportBox.innerText = "Error: Report generation failed.";
+                    reportBox.innerHTML = html;
                 }
-            } catch (e) {
-                console.error(e);
-                reportBox.innerText = "Network Error. Please try again.";
-            } finally {
-                btn.disabled = false;
-                btn.style.opacity = 1;
-            }
+            } catch(e) { reportBox.innerText = "Error generating report."; }
+            finally { btn.disabled = false; }
         };
     </script>
 </body>
