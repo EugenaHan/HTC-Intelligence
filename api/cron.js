@@ -53,7 +53,20 @@ function autoCategorize(title, summary) {
   if (text.match(/tech|ai|digital|ota|booking|trip\.com|expedia|app|mobile/)) cats.add('Tech'); // 科技 (适配 PhocusWire)
   if (text.match(/cruise|ship|sailing/)) cats.add('Cruise'); // 邮轮
 
-  // --- 维度二：核心大类 (Primary Segments) ---
+  // --- 维度二：宏观经济 (Macro Economy) ---
+  // 识别宏观经济相关新闻（GDP、CPI、汇率、央行政策等）
+  const economyKw = [
+    'gdp', 'cpi', 'inflation', 'exchange rate', 'yuan', 'rmb', 'renminbi',
+    'interest rate', 'central bank', 'p boc', 'people\'s bank',
+    'reserve requirement', 'monetary policy', 'consumer price',
+    'retail sales', 'trade surplus', 'trade deficit', 'export', 'import',
+    'bond market', 'stock market', 'currency', 'devaluation', 'appreciation'
+  ];
+  if (economyKw.some(k => text.includes(k)) && text.includes('china')) {
+    cats.add('Macro Economy');
+  }
+
+  // --- 维度三：核心大类 (Primary Segments) ---
 
   // 1. 奢侈品与零售 (Luxury & Retail) - 重点！
   const consumeKw = ['luxury', 'retail', 'duty free', 'dfs', 'brands', 'fashion', 'mall', 'cdf', 'consumption', 'shopper'];

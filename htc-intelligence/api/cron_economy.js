@@ -14,21 +14,21 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
 const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
 
-// 使用多个可靠的经济新闻 RSS 源
+// 使用可靠的 RSS 源
 const NEWS_SOURCES = [
   {
-    name: 'China Daily Business',
-    url: 'https://www.chinadaily.com.cn/business/rss/china.xml',
+    name: 'South China Morning Post - Economy',
+    url: 'https://www.scmp.com/rss/91/feed',
     type: 'rss'
   },
   {
-    name: 'CNBC Economy',
-    url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html',
+    name: 'BBC Business',
+    url: 'http://feeds.bbci.co.uk/news/business/rss.xml',
     type: 'rss'
   },
   {
-    name: 'Reuters Business',
-    url: 'https://www.reutersagency.com/feed/business-finance/',
+    name: 'Google News - China Economy',
+    url: 'https://news.google.com/rss/search?q=China+economy+GDP+CPI+inflation+exchange+rate&hl=en-US&gl=US&ceid=US:en',
     type: 'rss'
   }
 ];
@@ -40,7 +40,7 @@ function isEconomyRelated(title, summary) {
     'gdp', 'cpi', 'inflation', 'exchange rate', 'yuan', 'rmb',
     'interest rate', 'central bank', 'p boc', 'economy', 'economic',
     'market', 'stock', 'bond', 'currency', 'trade', 'import', 'export',
-    'china', 'chinese', 'consumer spending', 'retail sales'
+    'china', 'chinese', 'consumer spending', 'retail sales', 'hong kong'
   ];
   return economyKeywords.some(k => text.includes(k));
 }
@@ -112,8 +112,6 @@ async function fetchRSS(source) {
       const pubDate = $(el).find('pubDate').text();
       let summary = $(el).find('description').text() || $(el).find('content\\:encoded').text();
       summary = summary.replace(/<[^>]+>/g, '').trim().substring(0, 300) || title;
-
-      const fullText = (title + ' ' + summary).toLowerCase();
 
       // 只保留经济相关的新闻
       if (link && isEconomyRelated(title, summary)) {
