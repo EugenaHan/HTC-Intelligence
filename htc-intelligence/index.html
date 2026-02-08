@@ -246,10 +246,13 @@
                         <p>${insight}</p>
                     </div>
                     <div class="footer" onclick="event.stopPropagation()">
-                        <label style="display:flex; gap:6px; align-items:center; cursor:pointer; font-weight:600; color:var(--text);">
-                            <input type="checkbox" onchange="toggleSel('${item._id}')" ${SELECTED.has(item._id)?'checked':''}> ${T.add}
-                        </label>
-                        <span style="color:var(--primary)">${T.orig} &rarr;</span>
+                        <span style="color:#888;"><i class="far fa-calendar"></i> ${item.date}</span>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <label style="display:flex; gap:6px; align-items:center; cursor:pointer; font-weight:600; color:var(--text);">
+                                <input type="checkbox" onchange="toggleSel('${item._id}')" ${SELECTED.has(item._id)?'checked':''}> ${T.add}
+                            </label>
+                            <span style="color:var(--primary)">${T.orig} &rarr;</span>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
