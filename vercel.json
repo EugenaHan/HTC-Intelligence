@@ -1,14 +1,8 @@
 {
-  "buildCommand": "cd htc-intelligence && npm install",
-  "outputDirectory": "htc-intelligence",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/htc-intelligence/api/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/htc-intelligence/$1"
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
     }
-  ]
+  }
 }
