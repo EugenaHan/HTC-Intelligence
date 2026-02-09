@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修复经济新闻URL</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #0066cc;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #555;
+        }
+        .info-box strong {
+            color: #0066cc;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeeba;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .back-link a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 修复经济新闻URL</h1>
+        <p class="subtitle">一键修复所有经济新闻的链接</p>
+        
+        <div class="info-box">
+            <strong>说明：</strong><br>
+            此工具将把数据库中经济新闻的 URL 从 <code>example.com</code> 更新为真实的经济新闻网站（国家统计局、中国人民银行等）。
+        </div>
+        
+        <button onclick="fixUrls()" id="fixBtn">
+            ✅ 修复经济新闻URL
+        </button>
+        
+        <div id="result"></div>
+        
+        <div class="back-link">
+            <a href="/">← 返回主页</a>
+        </div>
+    </div>
+
+    <script>
+        async function fixUrls() {
+            const btn = document.getElementById('fixBtn');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>⏳ 正在修复...';
+            result.style.display = 'block';
+            result.className = 'loading';
+            result.innerHTML = '正在连接数据库并更新URL...<br><br>这可能需要几秒钟，请稍候...';
+            
+            try {
+                const response = await fetch('/api/fix-economy-urls', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'success';
+                    result.innerHTML = `
+                        <strong>✅ 修复成功！</strong><br><br>
+                        已更新 ${data.results.length} 条经济新闻的URL：<br><br>
+                        ${data.results.map((r, i) => `${i + 1}. ${r.title}`).join('<br>')}
+                        <br><br>
+                        <strong>🎉 现在可以返回主页，点击经济新闻卡片将打开真实的经济新闻网站！</strong>
+                    `;
+                    btn.innerHTML = '✅ 修复完成';
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                result.className = 'error';
+                result.innerHTML = `
+                    <strong>❌ 修复失败</strong><br><br>
+                    错误信息：${error.message}<br><br>
+                    请检查网络连接后重试，或联系技术支持。
+                `;
+                btn.disabled = false;
+                btn.innerHTML = '🔄 重试';
+            }
+        }
+    </script>
+</body>
+</html>
