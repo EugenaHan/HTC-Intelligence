@@ -6,9 +6,21 @@ module.exports = async function handler(req, res) {
   const { items } = req.body;
   if (!items || items.length === 0) return res.status(400).json({ error: 'No items selected' });
 
-  // 2. 整理素材 (把新闻分类喂给 AI，辅助它思考)
-  const context = items.map((n, i) =>
-    `[N${i + 1}] [${n.categories.join(', ')}] TITLE: ${n.title}\nSUMMARY: ${n.summary}\nINSIGHT: ${n.insight_en}`
+  const truncate = (value, maxLen) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLen);
+
+  // 2. 整理素材 (容错处理，避免脏数据导致函数崩溃)
+  const normalizedItems = items.slice(0, 30).map((n = {}) => {
+    const categories = Array.isArray(n.categories) ? n.categories : [];
+    return {
+      categories,
+      title: truncate(n.title || n.title_cn || 'Untitled', 180),
+      summary: truncate(n.summary || n.summary_cn || '', 700),
+      insightEn: truncate(n.insight_en || n.insight || '', 320)
+    };
+  });
+
+  const context = normalizedItems.map((n, i) =>
+    `[N${i + 1}] [${n.categories.join(', ') || 'Uncategorized'}] TITLE: ${n.title}\nSUMMARY: ${n.summary}\nINSIGHT: ${n.insightEn}`
   ).join('\n\n');
 
   // 3. 配置 DeepSeek
@@ -74,7 +86,8 @@ ${context}
       max_tokens: 1500,
       temperature: 0.7
     }, {
-      headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}` }
+      headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
+      timeout: 90000
     });
 
     const report = response.data.choices[0].message.content;
@@ -82,6 +95,11 @@ ${context}
 
   } catch (error) {
     console.error("Report Generation Error:", error);
-    res.status(500).json({ error: 'Failed to generate report' });
+    const providerMessage =
+      error?.response?.data?.error?.message ||
+      error?.response?.data?.message ||
+      error?.message ||
+      'Unknown error';
+    res.status(500).json({ success: false, error: `Failed to generate report: ${providerMessage}` });
   }
 };

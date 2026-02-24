@@ -445,8 +445,10 @@
                         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                         .replace(/\n/g, '<br>');
                     reportBox.innerHTML = html;
+                } else {
+                    reportBox.innerText = json.error || "Error generating report.";
                 }
-            } catch(e) { reportBox.innerText = "Error generating report."; }
+            } catch(e) { reportBox.innerText = `Error generating report. ${e.message || ''}`.trim(); }
             finally { btn.disabled = false; }
         };
     </script>
