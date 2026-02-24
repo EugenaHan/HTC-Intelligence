@@ -28,20 +28,30 @@ Structure Requirements (YOU MUST FOLLOW THIS):
 # Executive Market Intelligence Report
 *Date: ${new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'})}*
 
-## 1. Competitive Environment
-### 1.1 Short Haul Competitors (Asia Pacific)
-- Synthesize updates from Thailand, Singapore, Japan, Korea, SE Asia, etc.
-- Focus on: Visa policies, flight recovery, and marketing campaigns targeting Chinese tourists.
-- **Strategic Implication for Hawaii:** (One sentence on how this affects Hawaii).
+## 1. China Outbound Travel
+- Synthesize only China outbound travel demand, booking, and traveler preference shifts.
+- Ignore generic global tourism news that is not linked to Chinese travelers.
 
-### 1.2 Long Haul Competitors (Europe, US, Middle East, etc.)
-- Synthesize updates from Europe, US Mainland, Australia, Middle East.
-- Focus on: Capacity constraints, pricing, and visa hurdles.
-- **Strategic Implication for Hawaii:** (One sentence on Hawaii's positioning).
+## 2. Hawaii Competitor Analysis
+### 2.1 Short Haul Competitors
+- Cover short haul destinations competing for Chinese tourists (for example: Japan, Korea, Thailand, Singapore, Malaysia).
+- Focus on policy, flights, and campaign moves that could divert demand from Hawaii.
 
-## 2. Consumer Behaviour & Trends
-- Synthesize updates on Luxury Spending, Retail (Duty Free), Gen-Z preferences, and Travel Sentiment.
-- **Opportunity for Hawaii:** (How can Hawaii capture this spending power?).
+### 2.2 Long Haul Competitors
+- Cover long haul competitors (for example: US mainland, Europe, Australia, Middle East).
+- Focus on capacity, access convenience, and value proposition compared with Hawaii.
+
+## 3. China-US Flights
+- Summarize China-US aviation recovery, route launches/resumptions, frequency/capacity changes, and bottlenecks.
+- Explain direct implication for Hawaii accessibility.
+
+## 4. China-US Relations
+- Summarize bilateral developments that materially affect travel sentiment or travel policy.
+- Do not include unrelated geopolitical commentary.
+
+## 5. US Visa Environment
+- Summarize US visa policy/process updates that affect Chinese leisure travelers (appointment wait times, approval friction, policy changes).
+- Give one concise execution recommendation for Hawaii marketing under current visa constraints.
 
 ---
 **Input Data to Analyze:**

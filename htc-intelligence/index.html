@@ -157,10 +157,11 @@
                 <span class="filter-label" data-t="lbl_cat">Segment:</span>
                 <button class="pill active" data-group="cat" data-val="all" data-t="all">All News</button>
                 <button class="pill" data-group="cat" data-val="Outbound Trend" data-t="cat_out">Outbound Trend</button>
-                <button class="pill" data-group="cat" data-val="Consumption Trend" data-t="cat_con">Consumption</button>
                 <button class="pill" data-group="cat" data-val="Short Haul" data-t="cat_sh">Short Haul</button>
                 <button class="pill" data-group="cat" data-val="Long Haul" data-t="cat_lh">Long Haul</button>
-                <button class="pill" data-group="cat" data-val="Macro Economy" data-t="cat_eco">Economy</button>
+                <button class="pill" data-group="cat" data-val="China-US Flights" data-t="cat_usf">China-US Flights</button>
+                <button class="pill" data-group="cat" data-val="China-US Relations" data-t="cat_usr">China-US Relations</button>
+                <button class="pill" data-group="cat" data-val="US Visa" data-t="cat_usv">US Visa</button>
             </div>
 
             <div class="filter-row">
@@ -192,7 +193,7 @@
         const I18N = {
             cn: {
                 brand: "HTC 市场情报中心", lbl_cat: "市场分类:", lbl_sent: "情感筛选:",
-                all: "全部情报", cat_out: "出境游趋势", cat_con: "消费趋势", cat_sh: "短线竞对", cat_lh: "长线竞对", cat_eco: "宏观经济",
+                all: "全部情报", cat_out: "中国出境游", cat_sh: "短线竞对", cat_lh: "长线竞对", cat_usf: "中美航班", cat_usr: "中美关系", cat_usv: "美国旅游签证",
                 sent_pos: "利好消息", sent_neg: "威胁/警报", sent_neu: "中立", fav: "我的收藏",
                 rep_title: "高管摘要报告", rep_desc: "勾选新闻以生成战略建议", btn_gen: "生成战略报告",
                 add: "加入报告", orig: "阅读原文", insight: "HTC 战略洞察",
@@ -200,7 +201,7 @@
             },
             en: {
                 brand: "HTC Intelligence", lbl_cat: "Segment:", lbl_sent: "Sentiment:",
-                all: "All News", cat_out: "Outbound Trend", cat_con: "Consumption", cat_sh: "Short Haul", cat_lh: "Long Haul", cat_eco: "Economy",
+                all: "All News", cat_out: "China Outbound", cat_sh: "Short Haul", cat_lh: "Long Haul", cat_usf: "China-US Flights", cat_usr: "China-US Relations", cat_usv: "US Visa",
                 sent_pos: "Positive", sent_neg: "Threat/Alert", sent_neu: "Neutral", fav: "Favorites",
                 rep_title: "Executive Summary", rep_desc: "Select items for report", btn_gen: "Generate Report",
                 add: "Add to Report", orig: "Source", insight: "HTC Insight",
@@ -337,7 +338,17 @@
                 if (s.includes('neg') || s.includes('threat') || s.includes('威胁')) { color='neg'; label=T.sent_neg; }
                 else if (s.includes('pos') || s.includes('利好')) { color='pos'; label=T.sent_pos; }
 
-                const bigCats = ['Short Haul', 'Long Haul', 'Consumption Trend', 'Outbound Trend', 'Market Trend'];
+                const bigCats = [
+                    'Short Haul',
+                    'Long Haul',
+                    'Outbound Trend',
+                    'China-US Flights',
+                    'China-US Relations',
+                    'US Visa',
+                    'Consumption Trend',
+                    'Macro Economy',
+                    'Market Trend'
+                ];
                 const tags = (item.categories||[]).filter(c => !bigCats.includes(c)).slice(0,3)
                     .map(c => `<span class="tag industry">${c}</span>`).join('');
 

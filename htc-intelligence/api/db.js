@@ -1,4 +1,5 @@
 const { MongoClient, ObjectId } = require('mongodb');
+const { mergeFocusCategories, isFocusNews } = require('./focus_filter');
 
 // 从环境变量读取，Vercel 会在部署时注入 MONGODB_URI
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -139,6 +140,16 @@ const fallbackNews = [
   }
 ];
 
+function applyFocusFilter(newsItems = []) {
+  return newsItems
+    .map(item => {
+      const mergedCategories = mergeFocusCategories(item);
+      if (!isFocusNews({ ...item, categories: mergedCategories })) return null;
+      return { ...item, categories: mergedCategories };
+    })
+    .filter(Boolean);
+}
+
 // News Collection Operations
 async function getNews(filters = {}) {
   const db = await connectToDatabase();
@@ -146,7 +157,7 @@ async function getNews(filters = {}) {
   // If no database connection, return fallback data
   if (!db) {
     console.log('Using fallback news data');
-    let data = [...fallbackNews];
+    let data = applyFocusFilter(fallbackNews);
     
     // Apply filters
     if (filters.categories) {
@@ -161,19 +172,26 @@ async function getNews(filters = {}) {
   try {
     const collection = db.collection('news');
     const result = await collection.find(filters).sort({ date: -1 }).toArray();
+    let data = applyFocusFilter(result);
+
     // 若数据库无数据，返回预设数据，避免前端“抓不到新闻”
-    if (result.length === 0) {
+    if (data.length === 0) {
       console.log('No news in DB, using fallback');
-      let data = [...fallbackNews];
+      data = applyFocusFilter(fallbackNews);
       if (filters.categories && filters.categories.$in) {
         data = data.filter(item => item.categories.some(cat => filters.categories.$in.includes(cat)));
       }
       return data;
     }
-    return result;
+
+    if (filters.categories && filters.categories.$in) {
+      data = data.filter(item => item.categories.some(cat => filters.categories.$in.includes(cat)));
+    }
+
+    return data;
   } catch (error) {
     console.error('Error fetching news:', error);
-    return fallbackNews;
+    return applyFocusFilter(fallbackNews);
   }
 }
 
