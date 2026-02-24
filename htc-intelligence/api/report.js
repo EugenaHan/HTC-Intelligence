@@ -10,15 +10,17 @@ module.exports = async function handler(req, res) {
     if (items.length === 0) return res.status(400).json({ success: false, error: 'No items selected' });
 
     const truncate = (value, maxLen) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLen);
+    const maxItems = Math.min(Number(process.env.REPORT_MAX_ITEMS || 15), 30);
+    const providerTimeoutMs = Math.max(3000, Number(process.env.REPORT_PROVIDER_TIMEOUT_MS || 8000));
 
     // 2. 整理素材 (容错处理，避免脏数据导致函数崩溃)
-    const normalizedItems = items.slice(0, 30).map((n = {}) => {
+    const normalizedItems = items.slice(0, maxItems).map((n = {}) => {
       const categories = Array.isArray(n.categories) ? n.categories : [];
       return {
         categories,
         title: truncate(n.title || n.title_cn || 'Untitled', 180),
-        summary: truncate(n.summary || n.summary_cn || '', 700),
-        insightEn: truncate(n.insight_en || n.insight || '', 320)
+        summary: truncate(n.summary || n.summary_cn || '', 320),
+        insightEn: truncate(n.insight_en || n.insight || '', 220)
       };
     });
 
@@ -29,6 +31,9 @@ module.exports = async function handler(req, res) {
     // 3. 配置 DeepSeek
     const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
     const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
+    if (!DEEPSEEK_KEY) {
+      return res.status(500).json({ success: false, error: 'OPENAI_API_KEY is not configured' });
+    }
 
     // 4. 精心设计的 Prompt (强制 AI 按照三段式填空)
     const prompt = `You are a senior strategist at Hawaii Tourism Authority.
@@ -85,11 +90,11 @@ ${context}
         { role: 'system', content: "You are a senior travel strategist. Output in Markdown format." },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 1500,
-      temperature: 0.7
+      max_tokens: 900,
+      temperature: 0.4
     }, {
       headers: { 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
-      timeout: 90000
+      timeout: providerTimeoutMs
     });
 
     const report = response.data.choices[0].message.content;
@@ -101,6 +106,16 @@ ${context}
       error?.response?.data?.message ||
       error?.message ||
       'Unknown error';
+    const isProviderTimeout =
+      error?.code === 'ECONNABORTED' ||
+      error?.response?.status === 504 ||
+      /timeout/i.test(String(providerMessage));
+    if (isProviderTimeout) {
+      return res.status(504).json({
+        success: false,
+        error: 'Report provider timed out. Please retry with fewer selected items.'
+      });
+    }
     res.status(500).json({ success: false, error: `Failed to generate report: ${providerMessage}` });
   }
 };
