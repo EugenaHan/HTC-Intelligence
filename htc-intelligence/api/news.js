@@ -1,4 +1,4 @@
-const { getNews } = require('./db');
+const { getNews } = require('../lib/db');
 
 module.exports = async function handler(req, res) {
   // 设置 CORS

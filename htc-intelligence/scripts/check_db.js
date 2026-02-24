@@ -1,5 +1,5 @@
 require('dotenv').config({ path: '.env.local' });
-const { connectToDatabase } = require('./db');
+const { connectToDatabase } = require('../lib/db');
 
 async function check() {
   const db = await connectToDatabase();

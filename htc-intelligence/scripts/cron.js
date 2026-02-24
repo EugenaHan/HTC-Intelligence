@@ -6,17 +6,17 @@
  * 2. 多维分类逻辑：行业标签（Aviation/Hospitality/Policy/Tech/Cruise）+ 核心大类
  * 3. 智能过滤：针对全球源（Skift）过滤欧美本土新闻，提升情报纯度
  * 4. 最终配置：5个垂直源，36篇/次，100%相关度
- * Run: node api/cron.js
+ * Run: node scripts/cron.js
  */
 require('dotenv').config({ path: '.env.local' });
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { saveNews, connectToDatabase } = require('./db');
+const { saveNews, connectToDatabase } = require('../lib/db');
 const {
   FOCUS_PRIMARY_CATEGORIES,
   deriveFocusCategories,
   isFocusNews
-} = require('./focus_filter');
+} = require('../lib/focus_filter');
 
 // 环境适配
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

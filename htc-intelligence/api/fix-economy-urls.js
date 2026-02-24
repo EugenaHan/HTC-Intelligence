@@ -2,7 +2,7 @@
  * Vercel API: 修复远程数据库中的经济新闻 URL
  * 访问 /api/fix-economy-urls 即可执行
  */
-const { connectToDatabase } = require('./db');
+const { connectToDatabase } = require('../lib/db');
 
 module.exports = async function handler(req, res) {
   // 安全检查：只允许 POST 请求

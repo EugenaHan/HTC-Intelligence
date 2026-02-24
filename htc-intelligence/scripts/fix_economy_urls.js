@@ -2,7 +2,7 @@
  * 修复经济新闻URL - 使用真实的经济新闻链接
  */
 require('dotenv').config({ path: '.env.local' });
-const { connectToDatabase } = require('./db');
+const { connectToDatabase } = require('../lib/db');
 
 const realUrls = [
   {

@@ -3,7 +3,7 @@
  * 用于测试前端"Economy"筛选和报告生成功能
  */
 require('dotenv').config({ path: '.env.local' });
-const { connectToDatabase, saveNews } = require('./db');
+const { connectToDatabase, saveNews } = require('../lib/db');
 
 const economyTestData = [
   {

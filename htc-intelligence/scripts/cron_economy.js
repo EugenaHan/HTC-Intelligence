@@ -3,12 +3,12 @@
  * 宏观经济爬虫
  * 专门用于抓取宏观经济数据
  * 强制打上 Macro Economy 标签
- * Run: node api/cron_economy.js
+ * Run: node scripts/cron_economy.js
  */
 require('dotenv').config({ path: '.env.local' });
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { saveNews, connectToDatabase } = require('./db');
+const { saveNews, connectToDatabase } = require('../lib/db');
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');

@@ -2,7 +2,7 @@
  * 更新宏观经济测试数据（删除旧数据，添加完整版）
  */
 require('dotenv').config({ path: '.env.local' });
-const { connectToDatabase } = require('./db');
+const { connectToDatabase } = require('../lib/db');
 
 const economyTestData = [
   {

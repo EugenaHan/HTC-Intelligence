@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel deploy --prod",
-    "crawler": "node crawler/news-crawler.js"
+    "crawler": "node crawler/news-crawler.js",
+    "cron": "node scripts/cron.js"
   },
   "dependencies": {
     "@vercel/node": "^3.2.0",
