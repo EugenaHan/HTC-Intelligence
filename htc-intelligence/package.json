@@ -2,11 +2,10 @@
   "name": "htc-intelligence",
   "version": "1.0.0",
   "description": "HTC Market Intelligence - China Outbound Tourism Competitive Analysis",
-  "main": "api/index.js",
+  "main": "api/news.js",
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel deploy --prod",
-    "crawler": "node crawler/news-crawler.js",
     "cron": "node scripts/cron.js"
   },
   "dependencies": {

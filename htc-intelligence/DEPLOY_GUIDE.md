@@ -26,21 +26,11 @@
    mongodb+srv://htc-user:YOUR_PASSWORD@htc-cluster.xxxxx.mongodb.net/htc-intelligence?retryWrites=true&w=majority
    ```
 
-### 第二步：创建 Firebase 项目
+### 第二步：准备 DeepSeek API Key（可选）
 
-1. 访问 https://console.firebase.google.com/
-2. 点击 **Create a project**
-3. 项目名称：`htc-intelligence`
-4. 启用 Google Analytics（可选）
-5. 进入项目后，点击左侧 **Build** → **Authentication**
-6. 点击 **Get Started**
-7. 启用登录方式：
-   - **Email/Password**：启用
-   - **Google**：启用，选择项目支持邮箱
-8. 点击 ⚙️ **Project settings** → **General**
-9. 在 **Your apps** 部分点击 **</>** 添加 Web 应用
-10. 应用昵称：`htc-web`
-11. 复制 Firebase 配置信息
+1. 访问 https://platform.deepseek.com/
+2. 创建或获取 API Key
+3. 记录为 `OPENAI_API_KEY`（本项目沿用该环境变量名）
 
 ### 第三步：Fork GitHub 仓库
 
@@ -89,7 +79,7 @@ npx vercel --prod
 4. 导入 `htc-intelligence` 仓库
 5. 配置项目：
    - Framework Preset：**Other**
-   - Root Directory：**./**
+   - Root Directory：**htc-intelligence**
    - Build Command：留空
    - Output Directory：留空
 6. 点击 **Environment Variables**，添加以下变量：
@@ -97,9 +87,6 @@ npx vercel --prod
 | 变量名 | 值 |
 |--------|-----|
 | `MONGODB_URI` | 你的MongoDB连接字符串 |
-| `FIREBASE_API_KEY` | Firebase API Key |
-| `FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain |
-| `FIREBASE_PROJECT_ID` | Firebase Project ID |
 | `OPENAI_API_KEY` | OpenAI API Key（用于「Market Intelligence Executive Summary」报告生成） |
 
 7. 点击 **Deploy**
@@ -122,38 +109,18 @@ GitHub Actions 将每天自动运行爬虫，更新新闻数据。
 
 ## 验证部署
 
-### 1. 测试 API
-访问：`https://你的域名/api/health`
-
-应该返回：
-```json
-{
-  "success": true,
-  "message": "API is running",
-  "timestamp": "2026-02-03T..."
-}
-```
-
-### 2. 测试新闻接口
+### 1. 测试新闻接口
 访问：`https://你的域名/api/news`
 
 应该返回新闻列表。
 
-### 3. 测试前端
+### 2. 测试前端
 访问：`https://你的域名/`
 
 应该显示新闻卡片和报告面板。
 
-### 4. 登录功能（MongoDB 用户）
-登录使用 `/api/login`（POST，body: `{ email, password }`），在 MongoDB 同一数据库下需有 **users** 集合。
-
-在 MongoDB Atlas 中创建测试用户（示例）：
-- 进入 **Collections** → 选择数据库 `htc-intelligence` → 新建集合 `users`
-- 插入文档（示例，密码为明文；生产环境建议用 bcrypt 存密码）：
-```json
-{ "email": "your@email.com", "password": "yourpassword" }
-```
-前端点击「Sign In」会请求 `POST /api/login`，校验通过后返回 `{ success: true, user: { uid, email } }`。
+### 3. 测试报告接口
+在前端勾选若干新闻后点击「Generate Report」，应能返回英文战略摘要。
 
 ---
 
@@ -167,9 +134,9 @@ GitHub Actions 将每天自动运行爬虫，更新新闻数据。
 - 检查 `MONGODB_URI` 环境变量
 - 确认 MongoDB Atlas IP 白名单包含 0.0.0.0/0
 
-### 问题3：登录功能不工作
-- 检查 Firebase 配置
-- 确认 Authentication 已启用 Email/Password 和 Google
+### 问题3：报告生成失败
+- 检查 `OPENAI_API_KEY` 是否配置
+- 检查 `API_BASE_URL` 是否正确（默认可不配）
 
 ---
 
@@ -191,7 +158,6 @@ git push
 |------|---------|---------|
 | Vercel | 100GB/月 | ✅ 足够 |
 | MongoDB Atlas | 512MB | ✅ 足够 |
-| Firebase Auth | 10,000用户/月 | ✅ 足够 |
 | GitHub Actions | 2,000分钟/月 | ✅ 足够 |
 
 **总费用：$0/月**

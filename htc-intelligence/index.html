@@ -346,7 +346,6 @@
                     'China-US Relations',
                     'US Visa',
                     'Consumption Trend',
-                    'Macro Economy',
                     'Market Trend'
                 ];
                 const tags = (item.categories||[]).filter(c => !bigCats.includes(c)).slice(0,3)
@@ -422,11 +421,8 @@
             const reportBox = document.getElementById('reportOut');
             const btn = document.querySelector('.gen-btn');
 
-            // 🌟 智能判断：检测是否选择了宏观经济新闻
-            const hasEconomyItems = selItems.some(n => (n.categories || []).includes('Macro Economy'));
-            const isEcoReport = hasEconomyItems && selItems.every(n => (n.categories || []).includes('Macro Economy'));
-            const apiEndpoint = isEcoReport ? '/api/report_economy' : '/api/report';
-            const reportType = isEcoReport ? "Economic Briefing" : "Strategy Report";
+            const apiEndpoint = '/api/report';
+            const reportType = "Strategy Report";
 
             reportBox.innerHTML = `<div style="text-align:center; padding:30px; color:var(--primary);">
                 <i class="fas fa-circle-notch fa-spin"></i> Generating ${reportType}...</div>`;

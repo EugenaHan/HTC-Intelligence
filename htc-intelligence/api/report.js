@@ -1,8 +1,6 @@
-// api/report.js
-// 专门用于生成 HTC 标准战略报告 (三段式)
 const axios = require('axios');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // 1. 安全检查
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
   const { items } = req.body;
@@ -10,7 +8,7 @@ export default async function handler(req, res) {
 
   // 2. 整理素材 (把新闻分类喂给 AI，辅助它思考)
   const context = items.map((n, i) =>
-    `${i+1}. [${n.categories.join(', ')}] TITLE: ${n.title}\n   SUMMARY: ${n.summary}\n   INSIGHT: ${n.insight_en}`
+    `[N${i + 1}] [${n.categories.join(', ')}] TITLE: ${n.title}\nSUMMARY: ${n.summary}\nINSIGHT: ${n.insight_en}`
   ).join('\n\n');
 
   // 3. 配置 DeepSeek
@@ -19,42 +17,50 @@ export default async function handler(req, res) {
 
   // 4. 精心设计的 Prompt (强制 AI 按照三段式填空)
   const prompt = `You are a senior strategist at Hawaii Tourism Authority.
-Task: Write an Executive Market Intelligence Report based ONLY on the provided news.
-Target Audience: HTA (Hawaii Tourism Authority) Executives.
-Language: English (Professional, Strategic, Concise).
+Task: Write a monthly market intelligence brief based ONLY on the provided news.
+Target Audience: HTA executives.
+Language: English (professional and concise).
 
-Structure Requirements (YOU MUST FOLLOW THIS):
+Hard Rules:
+1. Use ONLY the provided input data.
+2. Add evidence tags in every key statement using [N#] format.
+3. If a section has no supporting evidence in input, write exactly: "No material updates in selected news."
+4. Do not add countries, airlines, policies, or numbers that are not in the input.
 
-# Executive Market Intelligence Report
-*Date: ${new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'})}*
+Required Structure:
 
-## 1. China Outbound Travel
-- Synthesize only China outbound travel demand, booking, and traveler preference shifts.
-- Ignore generic global tourism news that is not linked to Chinese travelers.
+# Competitive Environment
+## Short Haul
+- Flights and capacity changes (new routes, resumption, frequency increases).
+- Access and policy changes (visa/ADS/entry convenience when relevant).
+- Destination marketing and distribution moves (roadshows, partnerships, payment ecosystem, creator campaigns).
+- Demand signals (arrivals, booking or share shifts).
+- Strategic implication for Hawaii (1-2 sentences with [N#]).
 
-## 2. Hawaii Competitor Analysis
-### 2.1 Short Haul Competitors
-- Cover short haul destinations competing for Chinese tourists (for example: Japan, Korea, Thailand, Singapore, Malaysia).
-- Focus on policy, flights, and campaign moves that could divert demand from Hawaii.
+## Long Haul
+- Flights and capacity changes.
+- Access and policy changes.
+- Destination marketing and distribution moves.
+- Demand signals.
+- Strategic implication for Hawaii (1-2 sentences with [N#]).
 
-### 2.2 Long Haul Competitors
-- Cover long haul competitors (for example: US mainland, Europe, Australia, Middle East).
-- Focus on capacity, access convenience, and value proposition compared with Hawaii.
+# Consumer Trends
+- Demand and spending momentum among Chinese travelers.
+- Demographic and behavior shifts (e.g., younger cohorts, premium preferences, emotional-value travel).
+- What this implies for Hawaii product positioning (2-3 actionable insights with [N#]).
 
-## 3. China-US Flights
-- Summarize China-US aviation recovery, route launches/resumptions, frequency/capacity changes, and bottlenecks.
-- Explain direct implication for Hawaii accessibility.
+# US Access Monitor
+- China-US flights.
+- China-US relations that affect travel sentiment/policy.
+- US visa environment for Chinese leisure travel.
+- If no evidence exists, write: "No material updates in selected news."
 
-## 4. China-US Relations
-- Summarize bilateral developments that materially affect travel sentiment or travel policy.
-- Do not include unrelated geopolitical commentary.
-
-## 5. US Visa Environment
-- Summarize US visa policy/process updates that affect Chinese leisure travelers (appointment wait times, approval friction, policy changes).
-- Give one concise execution recommendation for Hawaii marketing under current visa constraints.
+# Recommended Actions (Next 30-90 Days)
+- Provide 3-5 actions for HTA.
+- Each action must include: Objective, Why now, and Supporting evidence [N#].
 
 ---
-**Input Data to Analyze:**
+Input Data:
 ${context}
 `;
 
@@ -78,4 +84,4 @@ ${context}
     console.error("Report Generation Error:", error);
     res.status(500).json({ error: 'Failed to generate report' });
   }
-}
+};

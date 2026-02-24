@@ -35,10 +35,17 @@ const NEWS_SOURCES = [
   { name: 'TTR Weekly', url: 'https://www.ttrweekly.com/site/feed/', type: 'rss' },
   { name: 'TTG Asia', url: 'https://www.ttgasia.com/feed/', type: 'rss' },
 
-  // --- B. 全球行业权威 (趋势与数据) ---
+  // --- B. 聚合补充源（提升航线/签证/营销动作召回） ---
+  {
+    name: 'Google News - China Outbound Competitor Radar',
+    url: 'https://news.google.com/rss/search?q=China+outbound+travel+flight+visa+tourism+board+Singapore+Malaysia+Japan+Korea+Australia+Canada+UK+Middle+East+Fiji+Egypt&hl=en-US&gl=US&ceid=US:en',
+    type: 'rss'
+  },
+
+  // --- C. 全球行业权威 (趋势与数据) ---
   { name: 'Skift', url: 'https://skift.com/feed/', type: 'rss' },
 
-  // --- C. 垂直细分领域 (免税零售) ---
+  // --- D. 垂直细分领域 (免税零售) ---
   { name: 'Moodie Davitt Report', url: 'https://www.moodiedavittreport.com/feed/', type: 'rss' }
 ];
 
@@ -89,6 +96,11 @@ async function analyzeNews(title, summary) {
 
   const prompt = `Role: Hawaii Tourism Board Strategist.
 Task: Analyze this news for Chinese citizens traveling to Hawaii.
+Priority signals:
+- flight launches/resumptions and frequency/capacity changes,
+- visa/ADS/entry policy updates,
+- destination marketing actions (roadshows, partnerships, creator campaigns, payment ecosystem),
+- outbound demand and consumer behavior trends.
 Priority topics: China outbound travel trends, Hawaii competitor dynamics (short haul & long haul), China-US flights, China-US relations, and US travel visa policy.
 News: "${title}" - "${summary}"
 

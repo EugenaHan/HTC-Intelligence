@@ -4,18 +4,18 @@
 
 ### 1. 自动化新闻爬取
 - **定时任务**: 每天凌晨2点自动爬取最新新闻
-- **数据源**: Travel And Tour World, Dragon Trail等
+- **数据源**: TTG Asia / TTR Weekly / Travel News Asia / Skift / Moodie Davitt
 - **智能分类**: 自动识别Short Haul/Long Haul/签证/航线等类别
 - **情感分析**: 自动判断利好/威胁/中立
 
 ### 2. 用户认证系统
-- **登录方式**: 邮箱/密码、Google账号
-- **Firebase Authentication**: 安全可靠
+- **登录方式**: 团队账号（前端本地校验）
+- **零外部认证依赖**: 不依赖 Firebase
 - **个人收藏**: 登录后可收藏感兴趣的新闻
 
 ### 3. 新闻展示
 - **自动筛选**: 默认显示当月及上个月新闻
-- **多维度筛选**: 出境游趋势/消费趋势/经济趋势/Short Haul/Long Haul
+- **多维度筛选**: 中国出境游/短线竞对/长线竞对/中美航班/中美关系/美国旅游签证
 - **收藏功能**: 收藏新闻，随时查看
 - **原文链接**: 点击卡片跳转原文
 
@@ -43,12 +43,6 @@
 │   Vercel CDN    │◀───│  Vercel API     │◀───────────┘
 │  (Frontend)     │     │  (Serverless)   │
 └─────────────────┘     └─────────────────┘
-        │
-        ▼
-┌─────────────────┐
-│  Firebase Auth  │
-│  (User Auth)    │
-└─────────────────┘
 ```
 
 ---
@@ -61,11 +55,10 @@
 3. 创建Cluster
 4. 获取连接字符串（MONGODB_URI）
 
-### 2. 创建Firebase项目
-1. 访问 https://console.firebase.google.com/
-2. 创建新项目
-3. 启用Authentication（Email/Password + Google）
-4. 获取Firebase配置参数
+### 2. 准备 DeepSeek API Key（可选）
+1. 访问 https://platform.deepseek.com/
+2. 创建 API Key
+3. 配置环境变量 `OPENAI_API_KEY`
 
 ### 3. 部署到Vercel
 1. Fork此仓库到您的GitHub账号
@@ -73,9 +66,8 @@
 3. 导入GitHub仓库
 4. 设置环境变量:
    - `MONGODB_URI`
-   - `FIREBASE_API_KEY`
-   - `FIREBASE_AUTH_DOMAIN`
-   - `FIREBASE_PROJECT_ID`
+   - `OPENAI_API_KEY`（可选，用于报告生成）
+   - `API_BASE_URL`（可选，默认 DeepSeek）
 5. 部署
 
 ### 4. 配置GitHub Actions
@@ -91,9 +83,8 @@
 | 变量名 | 说明 | 获取方式 |
 |--------|------|---------|
 | `MONGODB_URI` | MongoDB连接字符串 | MongoDB Atlas控制台 |
-| `FIREBASE_API_KEY` | Firebase API密钥 | Firebase项目设置 |
-| `FIREBASE_AUTH_DOMAIN` | Firebase认证域名 | Firebase项目设置 |
-| `FIREBASE_PROJECT_ID` | Firebase项目ID | Firebase项目设置 |
+| `OPENAI_API_KEY` | 报告生成 API Key（可选） | DeepSeek/OpenAI 控制台 |
+| `API_BASE_URL` | AI API地址（可选） | 默认为 DeepSeek |
 
 ---
 
@@ -110,7 +101,7 @@
 
 ### 收藏新闻
 1. 点击右上角"Sign In"登录
-2. 使用邮箱或Google账号
+2. 使用团队账号
 3. 点击新闻卡片上的❤️收藏
 4. 点击"My Favorites"查看收藏
 
@@ -127,7 +118,6 @@
 |------|---------|------|
 | Vercel | 100GB带宽/月 | 足够团队使用 |
 | MongoDB Atlas | 512MB存储 | 约存储2年新闻 |
-| Firebase Auth | 10,000用户/月 | 足够团队使用 |
 | GitHub Actions | 2,000分钟/月 | 足够每日爬虫 |
 
 **总成本: $0/月**
@@ -137,7 +127,7 @@
 ## 维护
 
 ### 更新爬虫
-- 修改 `crawler/news-crawler.js`
+- 修改 `scripts/cron.js`
 - 添加新的新闻源
 - 提交到GitHub，自动部署
 
