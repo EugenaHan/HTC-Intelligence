@@ -451,6 +451,9 @@
                         .replace(/^### (.*)/gm, '<h5 style="color:#444; font-weight:800; margin-top:10px;">$1</h5>')
                         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                         .replace(/\n/g, '<br>');
+                    if (json.notice) {
+                        html = `<div style="margin-bottom:12px; padding:10px 12px; border-radius:8px; background:#fff7e6; color:#8a5700; border:1px solid #ffd591;">${json.notice}</div>` + html;
+                    }
                     reportBox.innerHTML = html;
                 } else {
                     reportBox.innerText = json.error || `Error generating report (HTTP ${res.status}).`;
