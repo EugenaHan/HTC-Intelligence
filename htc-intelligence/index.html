@@ -434,9 +434,16 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ items: selItems })
                 });
-                const json = await res.json();
+                const raw = await res.text();
+                let json = null;
+                try {
+                    json = JSON.parse(raw);
+                } catch (parseErr) {
+                    const preview = (raw || '').slice(0, 180);
+                    throw new Error(`HTTP ${res.status}: ${preview || parseErr.message}`);
+                }
 
-                if (json.success) {
+                if (res.ok && json.success) {
                     // 通用渲染逻辑
                     let html = json.report
                         .replace(/^# (.*)/gm, '<h3 style="color:#2b3674; margin-bottom:10px; border-bottom:2px solid #eee; padding-bottom:5px;">$1</h3>')
@@ -446,7 +453,7 @@
                         .replace(/\n/g, '<br>');
                     reportBox.innerHTML = html;
                 } else {
-                    reportBox.innerText = json.error || "Error generating report.";
+                    reportBox.innerText = json.error || `Error generating report (HTTP ${res.status}).`;
                 }
             } catch(e) { reportBox.innerText = `Error generating report. ${e.message || ''}`.trim(); }
             finally { btn.disabled = false; }

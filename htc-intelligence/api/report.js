@@ -1,34 +1,37 @@
 const axios = require('axios');
 
 module.exports = async function handler(req, res) {
-  // 1. 安全检查
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
-  const { items } = req.body;
-  if (!items || items.length === 0) return res.status(400).json({ error: 'No items selected' });
+  try {
+    // 1. 安全检查
+    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
-  const truncate = (value, maxLen) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLen);
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const items = Array.isArray(body.items) ? body.items : [];
+    if (items.length === 0) return res.status(400).json({ success: false, error: 'No items selected' });
 
-  // 2. 整理素材 (容错处理，避免脏数据导致函数崩溃)
-  const normalizedItems = items.slice(0, 30).map((n = {}) => {
-    const categories = Array.isArray(n.categories) ? n.categories : [];
-    return {
-      categories,
-      title: truncate(n.title || n.title_cn || 'Untitled', 180),
-      summary: truncate(n.summary || n.summary_cn || '', 700),
-      insightEn: truncate(n.insight_en || n.insight || '', 320)
-    };
-  });
+    const truncate = (value, maxLen) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLen);
 
-  const context = normalizedItems.map((n, i) =>
-    `[N${i + 1}] [${n.categories.join(', ') || 'Uncategorized'}] TITLE: ${n.title}\nSUMMARY: ${n.summary}\nINSIGHT: ${n.insightEn}`
-  ).join('\n\n');
+    // 2. 整理素材 (容错处理，避免脏数据导致函数崩溃)
+    const normalizedItems = items.slice(0, 30).map((n = {}) => {
+      const categories = Array.isArray(n.categories) ? n.categories : [];
+      return {
+        categories,
+        title: truncate(n.title || n.title_cn || 'Untitled', 180),
+        summary: truncate(n.summary || n.summary_cn || '', 700),
+        insightEn: truncate(n.insight_en || n.insight || '', 320)
+      };
+    });
 
-  // 3. 配置 DeepSeek
-  const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
-  const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
+    const context = normalizedItems.map((n, i) =>
+      `[N${i + 1}] [${n.categories.join(', ') || 'Uncategorized'}] TITLE: ${n.title}\nSUMMARY: ${n.summary}\nINSIGHT: ${n.insightEn}`
+    ).join('\n\n');
 
-  // 4. 精心设计的 Prompt (强制 AI 按照三段式填空)
-  const prompt = `You are a senior strategist at Hawaii Tourism Authority.
+    // 3. 配置 DeepSeek
+    const DEEPSEEK_KEY = process.env.OPENAI_API_KEY;
+    const DEEPSEEK_BASE = (process.env.API_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
+
+    // 4. 精心设计的 Prompt (强制 AI 按照三段式填空)
+    const prompt = `You are a senior strategist at Hawaii Tourism Authority.
 Task: Write a monthly market intelligence brief based ONLY on the provided news.
 Target Audience: HTA executives.
 Language: English (professional and concise).
@@ -76,7 +79,6 @@ Input Data:
 ${context}
 `;
 
-  try {
     const response = await axios.post(`${DEEPSEEK_BASE}/v1/chat/completions`, {
       model: 'deepseek-chat',
       messages: [
@@ -92,7 +94,6 @@ ${context}
 
     const report = response.data.choices[0].message.content;
     res.status(200).json({ success: true, report });
-
   } catch (error) {
     console.error("Report Generation Error:", error);
     const providerMessage =
